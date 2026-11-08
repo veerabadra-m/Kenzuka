@@ -1,0 +1,819 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+.kenzuka-landing {
+  --ink: #111;
+  --paper: #e9e5dd;
+  --accent: #c91424;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Manrope', sans-serif;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+
+.kenzuka-landing * {
+  box-sizing: border-box;
+}
+
+.sketch-background {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background-color: #e9e5dd;
+  background-image:
+    url('https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1800'),
+    repeating-linear-gradient(
+      135deg,
+      transparent 0px,
+      transparent 38px,
+      rgba(0,0,0,.035) 39px,
+      transparent 40px
+    );
+  background-size: cover, auto;
+  background-position: center;
+  filter: grayscale(1);
+  opacity: .17;
+}
+
+.sketch-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse, transparent 10%, var(--paper) 90%);
+}
+
+.sketch-glow {
+  position: absolute;
+  width: 650px;
+  height: 650px;
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.background-caption,
+.background-number {
+  position: absolute;
+  z-index: 1;
+  font-size: 9px;
+  letter-spacing: 3px;
+  font-weight: 800;
+}
+
+.background-caption {
+  top: 50%;
+  left: 2%;
+  writing-mode: vertical-rl;
+}
+
+.background-number {
+  bottom: 5%;
+  right: 3%;
+  font-size: 40px;
+  font-family: 'Barlow Condensed', sans-serif;
+  opacity: .13;
+}
+
+.landing-header {
+  min-height: 90px;
+  padding: 10px 6%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.landing-logo {
+  width: 135px;
+  height: 70px;
+}
+
+.landing-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.landing-header-right {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.landing-header-right > span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.landing-menu-button {
+  border: 0;
+  background: #111;
+  color: white;
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.landing-stage {
+  flex: 1;
+  min-height: 570px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  perspective: 1400px;
+}
+
+.landing-side-text {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  font-size: 8px;
+  letter-spacing: 2px;
+  font-weight: 800;
+  writing-mode: vertical-rl;
+}
+
+.left-side {
+  left: 6%;
+}
+
+.right-side {
+  right: 6%;
+}
+
+.card-scene {
+  width: min(360px, 65vw);
+  aspect-ratio: 1;
+  position: relative;
+  perspective: 1200px;
+  z-index: 2;
+  touch-action: pan-y;
+}
+
+.card-shadow {
+  position: absolute;
+  inset: 12%;
+  background: rgba(0,0,0,.32);
+  filter: blur(35px);
+  transform: translateY(30px);
+  animation: shadowFloat 5s ease-in-out infinite;
+}
+
+.fashion-card {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #111;
+  color: white;
+  transform-style: preserve-3d;
+  transform:
+    rotateX(var(--rotate-x, 0deg))
+    rotateY(var(--rotate-y, 0deg));
+  animation: cardFloat 5s ease-in-out infinite;
+  transition: transform .25s ease-out;
+  box-shadow: 0 35px 65px rgba(0,0,0,.25);
+  border: 7px solid #111;
+}
+
+.fashion-card-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1s ease;
+  filter: brightness(.75);
+}
+
+.fashion-card-image.visible {
+  opacity: 1;
+}
+
+.card-top,
+.card-bottom {
+  position: absolute;
+  left: 17px;
+  right: 17px;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  letter-spacing: 2px;
+  font-weight: 800;
+}
+
+.card-top {
+  top: 17px;
+}
+
+.card-bottom {
+  bottom: 17px;
+}
+
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 25px;
+  background: linear-gradient(
+    0deg,
+    rgba(0,0,0,.65),
+    transparent 80%
+  );
+  transform: translateZ(25px);
+}
+
+.card-overlay > span {
+  font-size: 8px;
+  letter-spacing: 2px;
+  font-weight: 800;
+}
+
+.card-overlay h1 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(55px, 9vw, 90px);
+  line-height: .8;
+  margin: 15px 0;
+  font-weight: 900;
+}
+
+.card-overlay h1::first-line {
+  color: white;
+}
+
+.landing-footer {
+  min-height: 100px;
+  padding: 20px 6%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.landing-footer-left,
+.landing-footer-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  font-weight: 800;
+}
+
+.landing-footer-left span:last-child {
+  opacity: .5;
+}
+
+.landing-footer-right {
+  flex-direction: row;
+  align-items: center;
+}
+
+.landing-footer-right a {
+  display: flex;
+}
+
+.enter-kenzuka {
+  background: #111;
+  color: white;
+  border: none;
+  padding: 17px 26px;
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: background .3s, transform .3s;
+}
+
+.enter-kenzuka:hover {
+  background: var(--accent);
+  transform: translateY(-3px);
+}
+
+.landing-menu {
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  right: 0;
+  width: min(380px, 100%);
+  height: 100%;
+  background: #111;
+  color: white;
+  padding: 110px 35px 35px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  transform: translateX(100%);
+  transition: transform .4s ease;
+}
+
+.landing-menu.menu-visible {
+  transform: translateX(0);
+}
+
+.landing-menu > span {
+  color: #aaa;
+  font-size: 9px;
+  letter-spacing: 3px;
+}
+
+.landing-menu > button:not(.menu-close) {
+  background: none;
+  color: white;
+  border: none;
+  border-bottom: 1px solid #333;
+  padding: 15px 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.menu-close {
+  position: absolute;
+  right: 30px;
+  top: 30px;
+  border: 0;
+  background: none;
+  color: white;
+  cursor: pointer;
+}
+
+@keyframes cardFloat {
+  0%, 100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  50% {
+    translate: 0 -17px;
+    rotate: 1deg;
+  }
+}
+
+@keyframes shadowFloat {
+  0%, 100% {
+    transform: translateY(30px) scale(1);
+    opacity: .6;
+  }
+  50% {
+    transform: translateY(42px) scale(.88);
+    opacity: .35;
+  }
+}
+
+@media (max-width: 650px) {
+  .landing-header {
+    min-height: 75px;
+    padding: 5px 5%;
+  }
+
+  .landing-logo {
+    width: 105px;
+    height: 60px;
+  }
+
+  .landing-header-right > span {
+    display: none;
+  }
+
+  .landing-stage {
+    min-height: 540px;
+  }
+
+  .card-scene {
+    width: min(310px, 76vw);
+  }
+
+  .landing-side-text {
+    font-size: 6px;
+    letter-spacing: 1px;
+  }
+
+  .left-side {
+    left: 2%;
+  }
+
+  .right-side {
+    right: 2%;
+  }
+
+  .landing-footer {
+    min-height: 125px;
+    flex-wrap: wrap;
+    padding: 15px 5%;
+  }
+
+  .landing-footer-left,
+  .landing-footer-right {
+    font-size: 7px;
+  }
+
+  .enter-kenzuka {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    padding: 15px;
+  }
+
+  .background-caption {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fashion-card,
+  .card-shadow {
+    animation: none;
+  }
+}
+
+
+/* =================================
+   KENZUKA - 360 DEGREE 3D CUBE
+================================= */
+
+.card-scene {
+  perspective: 1200px;
+  perspective-origin: center center;
+}
+
+.cube-tilt {
+  --cube-size: 340px;
+
+  width: var(--cube-size);
+  height: var(--cube-size);
+
+  position: relative;
+  margin: auto;
+
+  transform-style: preserve-3d;
+  transform:
+    rotateX(var(--rotate-x, -8deg))
+    rotateY(var(--rotate-y, 0deg));
+
+  transition: transform 0.25s ease-out;
+}
+
+.fashion-cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+
+  transform-style: preserve-3d;
+
+  animation: kenzukaCubeRotation 12s linear infinite;
+}
+
+.cube-face {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: hidden;
+  backface-visibility: hidden;
+
+  border: 1px solid rgba(255,255,255,0.3);
+  background: #171717;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cube-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cube-front {
+  transform: translateZ(170px);
+}
+
+.cube-right {
+  transform: rotateY(90deg) translateZ(170px);
+}
+
+.cube-back {
+  transform: rotateY(180deg) translateZ(170px);
+}
+
+.cube-left {
+  transform: rotateY(-90deg) translateZ(170px);
+}
+
+.cube-top {
+  transform: rotateX(90deg) translateZ(170px);
+  background: #171717;
+  color: #f4ae21;
+}
+
+.cube-bottom {
+  transform: rotateX(-90deg) translateZ(170px);
+  background: #f4ae21;
+  color: #171717;
+}
+
+.cube-top span,
+.cube-bottom span {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: 5px;
+}
+
+.cube-face-content {
+  position: absolute;
+  inset: 0;
+
+  padding: 24px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  color: white;
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0.25),
+    transparent 35%,
+    rgba(0,0,0,0.6)
+  );
+}
+
+.cube-face-content h1 {
+  font-size: clamp(42px, 6vw, 65px);
+  line-height: 0.9;
+  font-weight: 900;
+}
+
+.cube-label {
+  position: absolute;
+  bottom: 25px;
+  left: 20px;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-shadow: 0 2px 10px black;
+}
+
+@keyframes kenzukaCubeRotation {
+  from {
+    transform: rotateX(-8deg) rotateY(0deg);
+  }
+
+  to {
+    transform: rotateX(-8deg) rotateY(360deg);
+  }
+}
+
+/* Mobile cube */
+
+@media (max-width: 600px) {
+  .cube-tilt {
+    --cube-size: min(68vw, 280px);
+  }
+
+  .cube-front {
+    transform: translateZ(calc(var(--cube-size) / 2));
+  }
+
+  .cube-right {
+    transform: rotateY(90deg)
+      translateZ(calc(var(--cube-size) / 2));
+  }
+
+  .cube-back {
+    transform: rotateY(180deg)
+      translateZ(calc(var(--cube-size) / 2));
+  }
+
+  .cube-left {
+    transform: rotateY(-90deg)
+      translateZ(calc(var(--cube-size) / 2));
+  }
+
+  .cube-top {
+    transform: rotateX(90deg)
+      translateZ(calc(var(--cube-size) / 2));
+  }
+
+  .cube-bottom {
+    transform: rotateX(-90deg)
+      translateZ(calc(var(--cube-size) / 2));
+  }
+
+  .cube-face-content {
+    padding: 16px;
+  }
+
+  .cube-face-content h1 {
+    font-size: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fashion-cube {
+    animation-duration: 40s;
+  }
+}
+
+
+/* KENZUKA manual 3D cube controls */
+
+.card-scene {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.card-scene.is-dragging {
+  cursor: grabbing;
+}
+
+.cube-tilt {
+  transform: none !important;
+  cursor: inherit;
+}
+
+.fashion-cube {
+  animation: none !important;
+  transform: rotateX(-12deg) rotateY(-25deg);
+  transition: none !important;
+  will-change: transform;
+}
+
+.cube-logo {
+  width: 115px;
+  height: 75px;
+  object-fit: contain;
+  background: white;
+  padding: 5px;
+  border-radius: 4px;
+  margin-bottom: 14px;
+  display: block;
+  pointer-events: none;
+}
+
+.cube-face-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.cube-face img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+@media (max-width: 600px) {
+  .cube-logo {
+    width: 90px;
+    height: 60px;
+  }
+}
+
+
+
+/* =================================
+   KENZUKA RESPONSIVE REFINEMENTS
+================================= */
+
+/* Tablet */
+@media (max-width: 900px) {
+  .landing-stage {
+    min-height: 620px;
+  }
+
+  .card-scene {
+    width: min(340px, 58vw);
+  }
+
+  .landing-side-text {
+    font-size: 8px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 650px) {
+  .kenzuka-landing {
+    min-height: 100svh;
+    overflow-x: hidden;
+  }
+
+  .landing-header {
+    min-height: 68px;
+    padding: 8px 5%;
+  }
+
+  .landing-stage {
+    min-height: 590px;
+    padding: 30px 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-scene {
+    width: min(280px, 76vw);
+    flex: 0 0 auto;
+    margin: 0 auto;
+  }
+
+  .cube-tilt {
+    --cube-size: min(68vw, 260px);
+  }
+
+  .landing-side-text {
+    top: auto;
+    transform: none;
+    font-size: 7px;
+    letter-spacing: 1px;
+    width: 100%;
+    text-align: center;
+    left: 0;
+    right: 0;
+  }
+
+  .left-side {
+    top: 12px;
+  }
+
+  .right-side {
+    bottom: 12px;
+  }
+
+  .landing-footer {
+    min-height: 115px;
+    padding: 18px 5%;
+    gap: 15px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .landing-footer-left,
+  .landing-footer-right {
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+  }
+
+  .enter-kenzuka {
+    min-height: 44px;
+    padding: 12px 22px;
+  }
+
+  .cube-logo {
+    width: 82px;
+    height: 55px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 380px) {
+  .landing-stage {
+    min-height: 540px;
+  }
+
+  .cube-tilt {
+    --cube-size: 230px;
+  }
+
+  .card-scene {
+    width: 230px;
+  }
+
+  .landing-footer {
+    padding: 14px 4%;
+  }
+}
