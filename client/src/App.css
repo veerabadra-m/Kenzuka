@@ -1524,3 +1524,240 @@ img {
     grid-template-columns: 1fr;
   }
 }
+
+/* =================================
+   KENZUKA PAYMENT PAGE
+================================= */
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 25px 0 30px;
+}
+
+.payment-options label {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid #c9c4bb;
+  background: #fff;
+  cursor: pointer;
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px;
+  letter-spacing: 0;
+  margin: 0;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.payment-options label:has(input:checked) {
+  border: 2px solid #171717;
+  background: #f3f0e9;
+}
+
+.payment-options input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #171717;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.payment-options label:hover {
+  border-color: #171717;
+}
+
+.payment-options + .checkout-button {
+  margin-top: 5px;
+}
+
+@media (max-width: 600px) {
+  .payment-options label {
+    padding: 17px 14px;
+    font-size: 12px;
+  }
+
+  .payment-options {
+    gap: 11px;
+  }
+}
+
+
+.payment-instructions {
+  background: #ebe6dc;
+  padding: 18px 20px;
+  margin-bottom: 25px;
+  border-left: 3px solid #171717;
+}
+
+.payment-instructions p {
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #333;
+  margin: 0;
+}
+
+/* =================================
+   KENZUKA ORDER CONFIRMATION PAGE
+================================= */
+
+.confirmation-card {
+  max-width: 760px;
+  margin: 45px auto 80px;
+  padding: 45px;
+  background: #fff;
+  border: 1px solid #d8d2c8;
+}
+
+.confirmation-icon {
+  width: 65px;
+  height: 65px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 25px;
+  border: 2px solid #171717;
+  border-radius: 50%;
+  font-size: 34px;
+}
+
+.confirmation-card > .eyebrow,
+.confirmation-card > h2 {
+  text-align: center;
+}
+
+.confirmation-card > h2 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 38px;
+  margin: 12px 0;
+}
+
+.confirmation-message {
+  max-width: 520px;
+  margin: 0 auto 35px;
+  text-align: center;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #666;
+}
+
+.confirmation-details {
+  padding: 24px 0;
+  border-top: 1px solid #d8d2c8;
+}
+
+.confirmation-details h3 {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin: 0 0 17px;
+}
+
+.confirmation-details p {
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 7px 0;
+  color: #444;
+  overflow-wrap: anywhere;
+}
+
+.confirmation-order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e0d8;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+}
+
+.confirmation-order-item strong {
+  white-space: nowrap;
+}
+
+.demo-notice {
+  color: #8a5b15 !important;
+  font-size: 12px !important;
+}
+
+.confirmation-card > .checkout-button {
+  margin-top: 20px;
+}
+
+@media (max-width: 600px) {
+  .confirmation-card {
+    margin: 25px 15px 45px;
+    padding: 25px 18px;
+  }
+
+  .confirmation-card > h2 {
+    font-size: 30px;
+  }
+
+  .confirmation-order-item {
+    font-size: 11px;
+    gap: 8px;
+  }
+
+  .confirmation-details {
+    padding: 19px 0;
+  }
+}
+
+.confirmation-order-id {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 auto 25px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.confirmation-order-id span {
+  font-weight: 500;
+}
+
+.confirmation-order-id strong {
+  font-weight: 700;
+  color: #171717;
+}
+
+.copy-order-button {
+  display: block;
+  margin: -12px auto 25px;
+  padding: 9px 16px;
+  border: 1px solid #171717;
+  background: transparent;
+  color: #171717;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.copy-order-button:hover {
+  background: #171717;
+  color: #fff;
+}
+.confirmation-date {
+  text-align: center;
+  margin: -12px auto 25px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  color: #777;
+}
+
+@media (max-width: 600px) {
+  .confirmation-date {
+    font-size: 10px;
+  }
+}

@@ -65,6 +65,10 @@ function App() {
   const [showCart, setShowCart] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
+  const [orderCopied, setOrderCopied] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [orderId, setOrderId] = useState('')
+  const [orderDate, setOrderDate] = useState('')
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('UPI')
   const [customerName, setCustomerName] = useState('')
 const [customerEmail, setCustomerEmail] = useState('')
@@ -89,13 +93,261 @@ const [customerPincode, setCustomerPincode] = useState('')
     (total, item) => total + item.quantity,
     0
   )
-
-  const cartSubtotal = cart.reduce(
-    (total, item) => total + item.product.price * item.quantity,
-    0
-  )
+const cartSubtotal = cart.reduce(
+  (total, item) => total + item.product.price * item.quantity,
+  0
+)
 if (!showShop) {
   return <LandingPage onEnter={() => setShowShop(true)} />
+}
+if (showConfirmation) {
+  return (
+    <main className="checkout-page confirmation-page">
+      <header className="checkout-header">
+        <h1>KENZUKA</h1>
+        <p>ORDER CONFIRMATION</p>
+      </header>
+
+      <section className="confirmation-card">
+     <div className="confirmation-order-id">
+  <span>ORDER REFERENCE : </span>
+  <strong>{orderId}</strong>
+</div>
+
+<p className="confirmation-date">
+  ORDER DATE : {orderDate}
+</p>
+<button
+  type="button"
+  className="copy-order-button"
+  onClick={async () => {
+    try {
+      await navigator.clipboard.writeText(orderId)
+      setOrderCopied(true)
+    } catch {
+      alert('Unable to copy the order reference.')
+    }
+  }}
+>
+  {orderCopied ? 'COPIED ✓' : 'COPY ORDER ID'}
+</button>
+
+        <p className="eyebrow">THANK YOU FOR CHOOSING KENZUKA</p>
+        <h2>THANK YOU FOR YOUR ORDER!</h2>
+
+        <p className="confirmation-message">
+          Your demo checkout is complete. No payment has been processed
+          and no real order has been placed.
+        </p>
+
+        <div className="confirmation-details">
+          <h3>DELIVERY DETAILS</h3>
+          <p><strong>Name:</strong> {customerName}</p>
+          <p><strong>Email:</strong> {customerEmail}</p>
+          <p><strong>Phone:</strong> {customerPhone}</p>
+          <p>
+            <strong>Address:</strong> {customerAddress}, {customerCity} - {customerPincode}
+          </p>
+        </div>
+
+        <div className="confirmation-details">
+          <h3>PAYMENT METHOD</h3>
+          <p>
+            {selectedPaymentMethod === 'COD'
+              ? 'Cash on Delivery'
+              : selectedPaymentMethod === 'Card'
+              ? 'Debit / Credit Card'
+              : 'UPI'}
+          </p>
+          <p className="demo-notice">
+            Demo only — payment processing is not connected yet.
+          </p>
+        </div>
+
+        <div className="confirmation-details">
+          <h3>ORDER SUMMARY</h3>
+
+          {cart.map((item, index) => (
+            <div
+              className="confirmation-order-item"
+              key={`${item.product.name}-${item.size}-${index}`}
+            >
+              <span>
+                {item.product.name} ({item.size}) × {item.quantity}
+              </span>
+              <strong>
+                ₹{(item.product.price * item.quantity).toLocaleString('en-IN')}
+              </strong>
+            </div>
+          ))}
+
+          <div className="checkout-total">
+            <span>Total Amount</span>
+            <strong>₹{cartSubtotal.toLocaleString('en-IN')}</strong>
+          </div>
+        </div>
+
+        <button
+          className="checkout-button"
+          onClick={() => {
+            setShowConfirmation(false)
+            setShowPayment(false)
+            setShowCheckout(false)
+            setShowCart(false)
+            setCart([])
+            setShowShop(true)
+          }}
+        >
+          CONTINUE SHOPPING →
+        </button>
+      </section>
+    </main>
+  )
+}
+
+if (showPayment) {
+  return (
+    <main className="checkout-page">
+      <header className="checkout-header">
+        <h1>KENZUKA</h1>
+        <p>PAYMENT</p>
+      </header>
+
+      <button
+        className="back-shopping"
+        onClick={() => {
+          setShowPayment(false)
+          setShowCheckout(true)
+        }}
+      >
+        ← BACK TO DELIVERY DETAILS
+      </button>
+
+      <div className="checkout-container">
+        <section className="checkout-form-section">
+          <p className="eyebrow">SECURE PAYMENT</p>
+          <h2>CHOOSE PAYMENT METHOD</h2>
+
+          <div className="payment-options">
+            <label>
+              <input
+                type="radio"
+                name="payment"
+                value="UPI"
+                checked={selectedPaymentMethod === 'UPI'}
+                onChange={(event) =>
+                  setSelectedPaymentMethod(event.target.value)
+                }
+              />
+              UPI (Google Pay / PhonePe / Paytm)
+            </label>
+
+            <label>
+              <input
+                type="radio"
+                name="payment"
+                value="Card"
+                checked={selectedPaymentMethod === 'Card'}
+                onChange={(event) =>
+                  setSelectedPaymentMethod(event.target.value)
+                }
+              />
+              Debit / Credit Card
+            </label>
+
+            <label>
+              <input
+                type="radio"
+                name="payment"
+                value="COD"
+                checked={selectedPaymentMethod === 'COD'}
+                onChange={(event) =>
+                  setSelectedPaymentMethod(event.target.value)
+                }
+              />
+              Cash on Delivery
+            </label>
+                 </div>
+<div className="payment-instructions">
+  {selectedPaymentMethod === 'UPI' && (
+    <p>
+      You can pay using Google Pay, PhonePe or Paytm.
+      You will be redirected to a secure payment gateway
+      when online payments are activated.
+    </p>
+  )}
+
+  {selectedPaymentMethod === 'Card' && (
+    <p>
+      Debit and credit card payments will be processed
+      through a secure payment gateway. Your card details
+      will not be collected on this demo page.
+    </p>
+  )}
+
+  {selectedPaymentMethod === 'COD' && (
+    <p>
+      Pay in cash when your KENZUKA order is delivered
+      to your address.
+    </p>
+  )}
+</div>
+    <button
+  className="checkout-button"
+  onClick={() => {
+    const now = new Date()
+
+    const newOrderId = `KEN-${now.getTime()}`
+    setOrderId(newOrderId)
+
+    setOrderDate(
+      now.toLocaleString('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    )
+
+    setOrderCopied(false)
+    setShowPayment(false)
+    setShowConfirmation(true)
+  }}
+>
+    PLACE DEMO ORDER →
+</button>
+      </section>
+
+      <aside className="checkout-order-section">
+        <p className="eyebrow">KENZUKA COLLECTION</p>
+        <h2>ORDER SUMMARY</h2>
+
+        {cart.map((item, index) => (
+          <div
+            className="checkout-order-item"
+            key={`${item.product.name}-${item.size}-${index}`}
+          >
+            <img src={item.product.image} alt={item.product.name} />
+
+            <div>
+              <h3>{item.product.name}</h3>
+              <p>Size: {item.size}</p>
+              <p>Quantity: {item.quantity}</p>
+              <strong>
+                ₹{(item.product.price * item.quantity).toLocaleString('en-IN')}
+              </strong>
+            </div>
+          </div>
+        ))}
+
+        <div className="checkout-total">
+          <span>Total Amount</span>
+          <strong>₹{cartSubtotal.toLocaleString('en-IN')}</strong>
+        </div>
+      </aside>
+    </div>
+  </main>
+  )
+
+
 }
 
 if (showCheckout) {
@@ -119,26 +371,26 @@ if (showCheckout) {
           <h2>DELIVERY INFORMATION</h2>
 
           <form
-  id="checkout-form"
-  onSubmit={(event) => {
-    event.preventDefault()
-    alert('Delivery details validated! Payment integration is our next step.')
-  }}
->
+            id="checkout-form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              setShowCheckout(false)
+              setShowPayment(true)
+            }}
+          >
             <label>FULL NAME</label>
-<input
-  type="text"
-  placeholder="Enter your full name"
-  value={customerName}
-  onChange={(event) => setCustomerName(event.target.value)}
-  required
-/>
-
+            <input
+              type="text"
+              placeholder="Enter your full name"
+              value={customerName}
+              onChange={(event) => setCustomerName(event.target.value)}
+              required
+            />
 
             <label>EMAIL ADDRESS</label>
             <input
               type="email"
-              placeholder="Enter your email"
+              placeholder="Enter your email address"
               value={customerEmail}
               onChange={(event) => setCustomerEmail(event.target.value)}
               required
@@ -146,20 +398,18 @@ if (showCheckout) {
 
             <label>PHONE NUMBER</label>
             <input
-  type="tel"
-  placeholder="10-digit mobile number"
-  value={customerPhone}
-  onChange={(event) =>
-    setCustomerPhone(event.target.value.replace(/\D/g, '').slice(0, 10))
-  }
-  pattern="[6-9][0-9]{9}"
-  title="Enter a valid 10-digit Indian mobile number"
-  maxLength={10}
-  required
-/>
+              type="tel"
+              placeholder="10-digit mobile number"
+              value={customerPhone}
+              onChange={(event) => setCustomerPhone(event.target.value)}
+              pattern="[6-9][0-9]{9}"
+              maxLength={10}
+              required
+            />
+
             <label>DELIVERY ADDRESS</label>
             <textarea
-              placeholder="House number, street, area..."
+              placeholder="House number, street, area"
               value={customerAddress}
               onChange={(event) => setCustomerAddress(event.target.value)}
               required
@@ -180,17 +430,14 @@ if (showCheckout) {
               <div>
                 <label>PINCODE</label>
                 <input
-  type="text"
-  placeholder="6-digit pincode"
-  value={customerPincode}
-  onChange={(event) =>
-    setCustomerPincode(event.target.value.replace(/\D/g, '').slice(0, 6))
-  }
-  pattern="[0-9]{6}"
-  title="Enter a valid 6-digit pincode"
-  maxLength={6}
-  required
-/>
+                  type="text"
+                  placeholder="6-digit pincode"
+                  value={customerPincode}
+                  onChange={(event) => setCustomerPincode(event.target.value)}
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  required
+                />
               </div>
             </div>
           </form>
@@ -198,10 +445,13 @@ if (showCheckout) {
 
         <aside className="checkout-order-section">
           <p className="eyebrow">KENZUKA COLLECTION</p>
-          <h2>YOUR ORDER</h2>
+          <h2>ORDER SUMMARY</h2>
 
           {cart.map((item, index) => (
-            <div className="checkout-order-item" key={`${item.product.name}-${item.size}-${index}`}>
+            <div
+              className="checkout-order-item"
+              key={`${item.product.name}-${item.size}-${index}`}
+            >
               <img src={item.product.image} alt={item.product.name} />
 
               <div>
@@ -216,21 +466,17 @@ if (showCheckout) {
           ))}
 
           <div className="checkout-total">
-            <span>Subtotal</span>
+            <span>Total Amount</span>
             <strong>₹{cartSubtotal.toLocaleString('en-IN')}</strong>
           </div>
 
-          <p className="checkout-shipping-note">
-            Shipping charges will be calculated separately.
-          </p>
-
           <button
-  className="checkout-button"
-  type="submit"
-  form="checkout-form"
->
-  CONTINUE TO PAYMENT →
-</button>
+            className="checkout-button"
+            type="submit"
+            form="checkout-form"
+          >
+            CONTINUE TO PAYMENT →
+          </button>
         </aside>
       </div>
     </main>
@@ -239,6 +485,7 @@ if (showCheckout) {
 
 return (
     <main className="website">
+
       <div className="announcement">
         <span>KENZUKA â€” STYLE THAT MOVES WITH YOU.</span>
         <span>DISCOVER YOUR NEXT LOOK <ArrowUpRight size={13} /></span>
