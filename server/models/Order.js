@@ -18,14 +18,15 @@ const orderSchema = new mongoose.Schema(
         },
 
         name: {
-          type: String,
-          required: true,
-        },
-
-        image: {
-          type: String,
-        },
-
+  type: String,
+  required: true,
+  trim: true,
+},
+fullName: {
+  type: String,
+  required: true,
+  trim: true,
+},
         price: {
           type: Number,
           required: true,
@@ -61,15 +62,18 @@ const orderSchema = new mongoose.Schema(
         required: true,
       },
 
-      pincode: {
-        type: String,
-        required: true,
-      },
-
+     pincode: {
+  type: String,
+  required: true,
+  trim: true,
+  match: /^[0-9]{6}$/,
+},
       phone: {
-        type: String,
-        required: true,
-      },
+  type: String,
+  required: true,
+  trim: true,
+  match: /^[0-9]{10}$/,
+},
     },
 
     paymentMethod: {

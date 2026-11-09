@@ -12,26 +12,53 @@ const generateToken = (userId) => {
   )
 }
 
+// Validate email format
+const isValidEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
 // Customer Registration
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body
+    const { name, email, password } = req.body || {}
 
-    if (!name || !email || !password) {
+    if (
+      typeof name !== 'string' ||
+      typeof email !== 'string' ||
+      typeof password !== 'string'
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide name, email and password',
+        message: 'Please provide valid name, email and password.',
       })
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 6 characters long',
-      })
-    }
-
+    const normalizedName = name.trim()
     const normalizedEmail = email.trim().toLowerCase()
+
+    if (normalizedName.length < 2 || normalizedName.length > 80) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name must contain between 2 and 80 characters.',
+      })
+    }
+
+    if (
+      normalizedEmail.length > 254 ||
+      !isValidEmail(normalizedEmail)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address.',
+      })
+    }
+
+    if (password.length < 6 || Buffer.byteLength(password, 'utf8') > 72) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must contain at least 6 characters and cannot exceed 72 bytes.',
+      })
+    }
 
     const existingUser = await User.findOne({
       email: normalizedEmail,
@@ -40,14 +67,14 @@ export const registerUser = async (req, res) => {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: 'Email is already registered',
+        message: 'Email is already registered.',
       })
     }
 
     const hashedPassword = await bcrypt.hash(password, 12)
 
     const user = await User.create({
-      name: name.trim(),
+      name: normalizedName,
       email: normalizedEmail,
       password: hashedPassword,
       role: 'customer',
@@ -55,9 +82,9 @@ export const registerUser = async (req, res) => {
 
     const token = generateToken(user._id)
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: 'Registration successful',
+      message: 'Registration successful.',
       token,
       user: {
         id: user._id,
@@ -67,9 +94,18 @@ export const registerUser = async (req, res) => {
       },
     })
   } catch (error) {
-    res.status(500).json({
+    console.error('Registration error:', error.message)
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email is already registered.',
+      })
+    }
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'Unable to complete registration.',
     })
   }
 }
@@ -77,23 +113,40 @@ export const registerUser = async (req, res) => {
 // Customer Login
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body
+    const { email, password } = req.body || {}
 
-    if (!email || !password) {
+    if (
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      !email.trim() ||
+      !password
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide email and password',
+        message: 'Please provide a valid email and password.',
+      })
+    }
+
+    const normalizedEmail = email.trim().toLowerCase()
+
+    if (
+      normalizedEmail.length > 254 ||
+      !isValidEmail(normalizedEmail)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address.',
       })
     }
 
     const user = await User.findOne({
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
     }).select('+password')
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: 'Invalid email or password.',
       })
     }
 
@@ -105,15 +158,15 @@ export const loginUser = async (req, res) => {
     if (!isPasswordCorrect) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: 'Invalid email or password.',
       })
     }
 
     const token = generateToken(user._id)
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: 'Login successful.',
       token,
       user: {
         id: user._id,
@@ -123,9 +176,11 @@ export const loginUser = async (req, res) => {
       },
     })
   } catch (error) {
-    res.status(500).json({
+    console.error('Login error:', error.message)
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'Unable to complete login.',
     })
   }
 }
