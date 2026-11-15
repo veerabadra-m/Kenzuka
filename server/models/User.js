@@ -1,6 +1,17 @@
 
 import mongoose from 'mongoose'
 
+const addressSchema = new mongoose.Schema(
+  {
+    fullName: { type: String, trim: true, default: '' },
+    address: { type: String, trim: true, default: '' },
+    city: { type: String, trim: true, default: '' },
+    pincode: { type: String, trim: true, default: '' },
+    phone: { type: String, trim: true, default: '' },
+  },
+  { _id: false }
+)
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -28,6 +39,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['customer', 'admin'],
       default: 'customer',
+    },
+
+    savedAddress: {
+      type: addressSchema,
+      default: () => ({}),
     },
   },
   {

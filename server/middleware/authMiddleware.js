@@ -57,3 +57,16 @@ export const adminOnly = (req, res, next) => {
     message: 'Access denied. Admin only.',
   })
 }
+
+
+// Allow customer accounts only
+export const customerOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'customer') {
+    return next()
+  }
+
+  return res.status(403).json({
+    success: false,
+    message: 'This feature is available to customer accounts only.',
+  })
+}

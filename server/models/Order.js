@@ -22,12 +22,7 @@ const orderSchema = new mongoose.Schema(
   required: true,
   trim: true,
 },
-fullName: {
-  type: String,
-  required: true,
-  trim: true,
-},
-        price: {
+price: {
           type: Number,
           required: true,
           min: 0,

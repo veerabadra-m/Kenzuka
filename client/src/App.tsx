@@ -1,4 +1,24 @@
-﻿import { useState } from 'react'
+﻿import { useEffect, useState, type CSSProperties } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getProducts, type ApiProduct } from './services/api'
+import {
+  createOrder,
+  getMyOrders,
+  type CustomerOrder,
+} from './services/orderService'
+import {
+  loginUser,
+  startLogin,
+  verifyCustomerOtp,
+  completeCustomerRegistration,
+  logoutUser,
+  getStoredUser,
+  getMyProfile,
+  updateMyProfile,
+  saveMyAddress,
+  type AuthUser,
+  type SavedAddress,
+} from './services/authService'
 import {
   Search,
   ShoppingBag,
@@ -7,6 +27,7 @@ import {
   ArrowUpRight,
   Camera,
   Heart,
+  UserRound,
 } from 'lucide-react'
 import LandingPage from './LandingPage'
 import './App.css'
@@ -32,35 +53,56 @@ const categories = [
     image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800',
   },
 ]
-
-const products = [
-  {
-    name: 'Essential Oversized Tee',
-    price: 899,
-    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=700',
-    tag: 'BESTSELLER',
-  },
-  {
-    name: 'Urban Street Jacket',
-    price: 1999,
-    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=700',
-    tag: 'NEW ARRIVAL',
-  },
-  {
-    name: 'Classic Streetwear',
-    price: 1299,
-    image: 'https://images.unsplash.com/photo-1523398002811-999ca8dec234?w=700',
-    tag: 'TRENDING',
-  },
-  {
-    name: 'Everyday Essential',
-    price: 999,
-    image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=700',
-    tag: 'POPULAR',
-  },
-]
+type StoreProduct = ApiProduct & {
+  image: string
+  tag: string
+}
 function App() {
+  const navigate = useNavigate()
   const [showShop, setShowShop] = useState(false)
+    // ACCOUNT / AUTHENTICATION
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(
+    () => getStoredUser()
+  )
+
+  const [showAccount, setShowAccount] = useState(false)
+
+  const [showOrders, setShowOrders] = useState(false)
+const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([])
+const [ordersLoading, setOrdersLoading] = useState(false)
+const [ordersError, setOrdersError] = useState('')
+// CUSTOMER ACCOUNT SETTINGS
+const [accountView, setAccountView] = useState<
+  'home' | 'profile' | 'address'
+>('home')
+
+const [profileName, setProfileName] = useState('')
+const [profileEmail, setProfileEmail] = useState('')
+
+const [savedAddressForm, setSavedAddressForm] = useState<SavedAddress>({
+  fullName: '',
+  address: '',
+  city: '',
+  pincode: '',
+  phone: '',
+})
+
+const [accountActionLoading, setAccountActionLoading] = useState(false)
+const [accountActionError, setAccountActionError] = useState('')
+const [accountActionSuccess, setAccountActionSuccess] = useState('')
+const [authStep, setAuthStep] = useState<
+  'email' | 'otp' | 'password' | 'name'
+>('email')
+
+const [authName, setAuthName] = useState('')
+const [authEmail, setAuthEmail] = useState('')
+const [authPassword, setAuthPassword] = useState('')
+const [authOtp, setAuthOtp] = useState('')
+const [registrationToken, setRegistrationToken] = useState('')
+
+const [authLoading, setAuthLoading] = useState(false)
+const [authError, setAuthError] = useState('')
+
   const [menuOpen, setMenuOpen] = useState(false)
   const [showCart, setShowCart] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
@@ -69,22 +111,461 @@ function App() {
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [orderId, setOrderId] = useState('')
   const [orderDate, setOrderDate] = useState('')
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('UPI')
-  const [customerName, setCustomerName] = useState('')
-const [customerEmail, setCustomerEmail] = useState('')
-const [customerPhone, setCustomerPhone] = useState('')
-const [customerAddress, setCustomerAddress] = useState('')
-const [customerCity, setCustomerCity] = useState('')
-const [customerPincode, setCustomerPincode] = useState('')
+ const [selectedPaymentMethod, setSelectedPaymentMethod] =
+  useState<'UPI' | 'Card' | 'COD'>('UPI')
 
-  const [selectedProduct, setSelectedProduct] = useState<
-    (typeof products)[number] | null
-  >(null)
+const [orderSubmitting, setOrderSubmitting] = useState(false)
+const [orderError, setOrderError] = useState('')
+
+  const [customerName, setCustomerName] = useState('')
+  const [customerEmail, setCustomerEmail] = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
+  const [customerAddress, setCustomerAddress] = useState('')
+  const [customerCity, setCustomerCity] = useState('')
+  const [customerPincode, setCustomerPincode] = useState('')
+
+  const [products, setProducts] = useState<StoreProduct[]>([])
+  // PRODUCT SEARCH, FILTER AND WISHLIST
+const [searchTerm, setSearchTerm] = useState('')
+const [selectedCategory, setSelectedCategory] = useState('ALL')
+const [sortOrder, setSortOrder] = useState<'default' | 'low-high' | 'high-low'>('default')
+const [showSearch, setShowSearch] = useState(false)
+const [showWishlistOnly, setShowWishlistOnly] = useState(false)
+const [showWishlistPage, setShowWishlistPage] = useState(false)
+
+const [wishlist, setWishlist] = useState<string[]>(() => {
+  try {
+    return JSON.parse(localStorage.getItem('kenzukaWishlist') || '[]') as string[]
+  } catch {
+    return []
+  }
+})
+  const [productsLoading, setProductsLoading] = useState(true)
+  const [productsError, setProductsError] = useState('')
+
+  useEffect(() => {
+    let active = true
+
+    const loadProducts = async () => {
+      try {
+        const data = await getProducts()
+
+        if (active) {
+          setProducts(
+            data.map((product) => ({
+              ...product,
+              image:
+                product.images?.[0] ||
+                'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=700',
+              tag: product.isFeatured ? 'FEATURED' : 'NEW ARRIVAL',
+            }))
+          )
+        }
+      } catch {
+        if (active) {
+          setProductsError('Unable to load products. Please try again later.')
+        }
+      } finally {
+        if (active) setProductsLoading(false)
+      }
+    }
+
+    loadProducts()
+
+    return () => {
+      active = false
+    }
+  }, [])
+  // SAVE WISHLIST WHENEVER IT CHANGES
+useEffect(() => {
+  localStorage.setItem('kenzukaWishlist', JSON.stringify(wishlist))
+}, [wishlist])
+// LOAD CUSTOMER PROFILE AND SAVED ADDRESS WHEN ACCOUNT OPENS
+useEffect(() => {
+  if (!showAccount || currentUser?.role !== 'customer') return
+
+  let active = true
+
+  const loadProfile = async () => {
+    try {
+      const user = await getMyProfile()
+
+      if (!active) return
+
+      setCurrentUser(user)
+      setProfileName(user.name)
+      setProfileEmail(user.email)
+
+      if (user.savedAddress) {
+        const address = user.savedAddress
+
+        setSavedAddressForm({
+          fullName: address.fullName || '',
+          address: address.address || '',
+          city: address.city || '',
+          pincode: address.pincode || '',
+          phone: address.phone || '',
+        })
+
+        setCustomerName(address.fullName || '')
+        setCustomerAddress(address.address || '')
+        setCustomerCity(address.city || '')
+        setCustomerPincode(address.pincode || '')
+        setCustomerPhone(address.phone || '')
+      }
+
+      setCustomerEmail(user.email)
+    } catch {
+      if (active) {
+        setAccountActionError('Unable to load your account details.')
+      }
+    }
+  }
+
+  void loadProfile()
+
+  return () => {
+    active = false
+  }
+}, [showAccount, currentUser?.role])
+// TOGGLE A PRODUCT IN THE WISHLIST
+const toggleWishlist = (productId: string) => {
+  setWishlist((previous) =>
+    previous.includes(productId)
+      ? previous.filter((id) => id !== productId)
+      : [...previous, productId]
+  )
+}
+
+// AVAILABLE PRODUCT CATEGORIES
+const availableCategories = Array.from(
+  new Set(products.map((product) => product.category).filter(Boolean))
+)
+
+// SEARCH, CATEGORY FILTER AND WISHLIST FILTER
+const filteredProducts = products
+  .filter((product) => {
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(searchTerm.trim().toLowerCase())
+
+    const matchesCategory =
+      selectedCategory === 'ALL' ||
+      product.category === selectedCategory
+
+    const matchesWishlist =
+      !showWishlistOnly || wishlist.includes(product._id)
+
+    return matchesSearch && matchesCategory && matchesWishlist
+  })
+  .sort((a, b) => {
+    if (sortOrder === 'low-high') return a.price - b.price
+    if (sortOrder === 'high-low') return b.price - a.price
+    return 0
+  })
+
+const handleAuthSubmit = async () => {
+  setAuthError('')
+  setAuthLoading(true)
+
+  try {
+    // STEP 1: Check the email and determine the login method
+    if (authStep === 'email') {
+      const response = await startLogin(authEmail.trim())
+
+      setAuthStep(response.method)
+      setAuthPassword('')
+      setAuthOtp('')
+      return
+    }
+
+    // STEP 2: Admin password login
+    if (authStep === 'password') {
+      const response = await loginUser({
+        email: authEmail.trim(),
+        password: authPassword,
+      })
+
+      setCurrentUser(response.user)
+      setShowAccount(false)
+
+      setAuthStep('email')
+      setAuthName('')
+      setAuthEmail('')
+      setAuthPassword('')
+      setAuthOtp('')
+      setRegistrationToken('')
+      setAuthError('')
+
+      if (response.user.role === 'admin') {
+        navigate('/admin')
+      }
+
+      return
+    }
+
+    // STEP 3: Customer OTP verification
+    if (authStep === 'otp') {
+      const response = await verifyCustomerOtp({
+        email: authEmail.trim(),
+        otp: authOtp,
+      })
+
+      // Existing customer: login immediately
+      if (!response.needsName && response.user) {
+        setCurrentUser(response.user)
+        setShowAccount(false)
+
+        setAuthStep('email')
+        setAuthName('')
+        setAuthEmail('')
+        setAuthPassword('')
+        setAuthOtp('')
+        setRegistrationToken('')
+        setAuthError('')
+
+        return
+      }
+
+      // New customer: OTP is already verified.
+      // Ask only for the name; do not ask for OTP again.
+      if (response.needsName && response.registrationToken) {
+        setRegistrationToken(response.registrationToken)
+        setAuthOtp('')
+        setAuthStep('name')
+        return
+      }
+
+      throw new Error('Unable to complete verification. Please try again.')
+    }
+
+    // STEP 4: Create a new customer account after OTP verification
+    if (authStep === 'name') {
+      const response = await completeCustomerRegistration({
+        name: authName.trim(),
+        registrationToken,
+      })
+
+      setCurrentUser(response.user)
+      setShowAccount(false)
+
+      setAuthStep('email')
+      setAuthName('')
+      setAuthEmail('')
+      setAuthPassword('')
+      setAuthOtp('')
+      setRegistrationToken('')
+      setAuthError('')
+    }
+  } catch (error: unknown) {
+    const apiError = error as {
+      response?: {
+        data?: {
+          message?: string
+        }
+      }
+      message?: string
+    }
+
+    setAuthError(
+      apiError.response?.data?.message ||
+        apiError.message ||
+        'Something went wrong. Please try again.'
+    )
+  } finally {
+    setAuthLoading(false)
+  }
+}
+   const handleLogout = () => {
+    logoutUser()
+    setCurrentUser(null)
+    setShowAccount(false)
+  }
+
+  const handleViewOrders = async () => {
+    setShowOrders(true)
+    setOrdersLoading(true)
+    setOrdersError('')
+
+    try {
+      const orders = await getMyOrders()
+      setCustomerOrders(orders)
+    } catch {
+      setOrdersError('Unable to load your orders. Please try again.')
+    } finally {
+      setOrdersLoading(false)
+    }
+  }
+
+const [selectedProduct, setSelectedProduct] =
+  useState<StoreProduct | null>(null)
+
+const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+const [isImageZoomOpen, setIsImageZoomOpen] = useState(false)
+  // UPDATE CUSTOMER PROFILE
+  const handleSaveProfile = async () => {
+    setAccountActionError('')
+    setAccountActionSuccess('')
+    setAccountActionLoading(true)
+
+    try {
+      const updatedUser = await updateMyProfile({
+        name: profileName,
+        email: profileEmail,
+      })
+
+      setCurrentUser(updatedUser)
+      setCustomerEmail(updatedUser.email)
+      setAccountActionSuccess('Your profile has been updated successfully.')
+      setAccountView('home')
+    } catch (error: unknown) {
+      const apiError = error as {
+        response?: { data?: { message?: string } }
+      }
+      setAccountActionError(
+        apiError.response?.data?.message || 'Unable to update your profile.'
+      )
+    } finally {
+      setAccountActionLoading(false)
+    }
+  }
+
+  // SAVE CUSTOMER DELIVERY ADDRESS
+  const handleSaveAddress = async () => {
+    setAccountActionError('')
+    setAccountActionSuccess('')
+    setAccountActionLoading(true)
+
+    try {
+      const address = await saveMyAddress(savedAddressForm)
+
+      setSavedAddressForm(address)
+      setCustomerName(address.fullName)
+      setCustomerAddress(address.address)
+      setCustomerCity(address.city)
+      setCustomerPincode(address.pincode)
+      setCustomerPhone(address.phone)
+
+      setCurrentUser((previous) =>
+        previous ? { ...previous, savedAddress: address } : previous
+      )
+
+      setAccountActionSuccess('Your delivery address has been saved.')
+      setAccountView('home')
+    } catch (error: unknown) {
+      const apiError = error as {
+        response?: { data?: { message?: string } }
+      }
+      setAccountActionError(
+        apiError.response?.data?.message || 'Unable to save your address.'
+      )
+    } finally {
+      setAccountActionLoading(false)
+    }
+  }
+
+  // PLACE CUSTOMER ORDER
+  const handlePlaceOrder = async () => {
+    setOrderError('')
+
+    if (!currentUser || currentUser.role !== 'customer') {
+      setShowPayment(false)
+      setShowCheckout(false)
+      setShowCart(false)
+      setShowOrders(false)
+     setAuthStep('email')
+      setAuthError('Please log in with your customer account before placing an order.')
+      setShowAccount(true)
+      return
+    }
+
+    if (cart.length === 0) {
+      setOrderError('Your cart is empty.')
+      return
+    }
+
+    setOrderSubmitting(true)
+
+    try {
+      const savedOrder = await createOrder({
+        orderItems: cart.map((item) => ({
+          product: item.product._id,
+          quantity: item.quantity,
+          size: item.size,
+        })),
+        shippingAddress: {
+          fullName: customerName,
+          address: customerAddress,
+          city: customerCity,
+          pincode: customerPincode,
+          phone: customerPhone,
+        },
+        paymentMethod: selectedPaymentMethod,
+      })
+
+      const orderCreatedAt = new Date(savedOrder.createdAt)
+
+      const datePart = orderCreatedAt
+        .toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })
+        .replace(/ /g, '')
+        .toUpperCase()
+
+      const timePart =
+        String(orderCreatedAt.getHours()).padStart(2, '0') +
+        String(orderCreatedAt.getMinutes()).padStart(2, '0')
+
+      const productName =
+        cart.length === 1
+          ? cart[0].product.name
+          : `${cart[0].product.name}-PLUS-${cart.length - 1}`
+
+      const productPart =
+        productName
+          .normalize('NFKD')
+          .replace(/[^a-zA-Z0-9]+/g, '')
+          .toUpperCase()
+          .slice(0, 12) || 'PRODUCT'
+
+      const uniquePart = savedOrder._id.slice(-4).toUpperCase()
+
+      setOrderId(`KEN-${datePart}-${timePart}-${productPart}-${uniquePart}`)
+
+      setOrderDate(
+        new Date(savedOrder.createdAt).toLocaleString('en-IN', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        })
+      )
+
+      setOrderCopied(false)
+      setShowPayment(false)
+      setShowConfirmation(true)
+    } catch (error: unknown) {
+      const apiError = error as {
+        response?: {
+          data?: {
+            message?: string
+          }
+        }
+      }
+
+      setOrderError(
+        apiError.response?.data?.message ||
+          'Unable to place your order. Please try again.'
+      )
+    } finally {
+      setOrderSubmitting(false)
+    }
+  }
 
   const [selectedSize, setSelectedSize] = useState('')
 
   const [cart, setCart] = useState<{
-    product: (typeof products)[number]
+    product: StoreProduct
     size: string
     quantity: number
   }[]>([])
@@ -93,13 +574,16 @@ const [customerPincode, setCustomerPincode] = useState('')
     (total, item) => total + item.quantity,
     0
   )
+
 const cartSubtotal = cart.reduce(
   (total, item) => total + item.product.price * item.quantity,
   0
 )
+
 if (!showShop) {
   return <LandingPage onEnter={() => setShowShop(true)} />
 }
+
 if (showConfirmation) {
   return (
     <main className="checkout-page confirmation-page">
@@ -129,17 +613,22 @@ if (showConfirmation) {
     }
   }}
 >
-  {orderCopied ? 'COPIED ✓' : 'COPY ORDER ID'}
+  {orderCopied ? 'COPIED ?' : 'COPY ORDER ID'}
 </button>
 
         <p className="eyebrow">THANK YOU FOR CHOOSING KENZUKA</p>
         <h2>THANK YOU FOR YOUR ORDER!</h2>
 
         <p className="confirmation-message">
-          Your demo checkout is complete. No payment has been processed
-          and no real order has been placed.
-        </p>
+  Your order has been successfully placed!
+  Thank you for shopping with KENZUKA.
+</p>
 
+<div className="delivery-estimate">
+  <h3>EXPECTED DELIVERY</h3>
+  <p>Your order will be delivered within</p>
+  <strong>4-5 DAYS</strong>
+</div>
         <div className="confirmation-details">
           <h3>DELIVERY DETAILS</h3>
           <p><strong>Name:</strong> {customerName}</p>
@@ -152,16 +641,17 @@ if (showConfirmation) {
 
         <div className="confirmation-details">
           <h3>PAYMENT METHOD</h3>
-          <p>
-            {selectedPaymentMethod === 'COD'
-              ? 'Cash on Delivery'
-              : selectedPaymentMethod === 'Card'
-              ? 'Debit / Credit Card'
-              : 'UPI'}
-          </p>
-          <p className="demo-notice">
-            Demo only — payment processing is not connected yet.
-          </p>
+         <p>
+  {selectedPaymentMethod === 'COD'
+    ? 'Cash on Delivery'
+    : selectedPaymentMethod === 'Card'
+    ? 'Debit / Credit Card'
+    : 'UPI'}
+</p>
+
+<p className="demo-notice">
+  Payment processing is not connected yet. No online payment has been charged.
+</p>
         </div>
 
         <div className="confirmation-details">
@@ -173,17 +663,17 @@ if (showConfirmation) {
               key={`${item.product.name}-${item.size}-${index}`}
             >
               <span>
-                {item.product.name} ({item.size}) × {item.quantity}
+                {item.product.name} ({item.size})
               </span>
               <strong>
-                ₹{(item.product.price * item.quantity).toLocaleString('en-IN')}
+                {"\u20B9"}{(item.product.price * item.quantity).toLocaleString('en-IN')}
               </strong>
             </div>
           ))}
 
           <div className="checkout-total">
             <span>Total Amount</span>
-            <strong>₹{cartSubtotal.toLocaleString('en-IN')}</strong>
+            <strong>{"\u20B9"}{cartSubtotal.toLocaleString('en-IN')}</strong>
           </div>
         </div>
 
@@ -198,7 +688,7 @@ if (showConfirmation) {
             setShowShop(true)
           }}
         >
-          CONTINUE SHOPPING →
+          CONTINUE SHOPPING
         </button>
       </section>
     </main>
@@ -220,7 +710,7 @@ if (showPayment) {
           setShowCheckout(true)
         }}
       >
-        ← BACK TO DELIVERY DETAILS
+        BACK TO DELIVERY DETAILS
       </button>
 
       <div className="checkout-container">
@@ -236,7 +726,9 @@ if (showPayment) {
                 value="UPI"
                 checked={selectedPaymentMethod === 'UPI'}
                 onChange={(event) =>
-                  setSelectedPaymentMethod(event.target.value)
+                setSelectedPaymentMethod(
+  event.target.value as 'UPI' | 'Card' | 'COD'
+)
                 }
               />
               UPI (Google Pay / PhonePe / Paytm)
@@ -249,7 +741,9 @@ if (showPayment) {
                 value="Card"
                 checked={selectedPaymentMethod === 'Card'}
                 onChange={(event) =>
-                  setSelectedPaymentMethod(event.target.value)
+                 setSelectedPaymentMethod(
+  event.target.value as 'UPI' | 'Card' | 'COD'
+)
                 }
               />
               Debit / Credit Card
@@ -262,7 +756,9 @@ if (showPayment) {
                 value="COD"
                 checked={selectedPaymentMethod === 'COD'}
                 onChange={(event) =>
-                  setSelectedPaymentMethod(event.target.value)
+                  setSelectedPaymentMethod(
+  event.target.value as 'UPI' | 'Card' | 'COD'
+)
                 }
               />
               Cash on Delivery
@@ -292,27 +788,22 @@ if (showPayment) {
     </p>
   )}
 </div>
-    <button
+    {orderError && (
+  <p
+    role="alert"
+    style={{ color: '#ff7777', fontSize: '13px', marginBottom: '12px' }}
+  >
+    {orderError}
+  </p>
+)}
+
+<button
+  type="button"
   className="checkout-button"
-  onClick={() => {
-    const now = new Date()
-
-    const newOrderId = `KEN-${now.getTime()}`
-    setOrderId(newOrderId)
-
-    setOrderDate(
-      now.toLocaleString('en-IN', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      })
-    )
-
-    setOrderCopied(false)
-    setShowPayment(false)
-    setShowConfirmation(true)
-  }}
+  onClick={handlePlaceOrder}
+  disabled={orderSubmitting}
 >
-    PLACE DEMO ORDER →
+  {orderSubmitting ? 'PLACING ORDER...' : 'PLACE ORDER'}
 </button>
       </section>
 
@@ -332,7 +823,7 @@ if (showPayment) {
               <p>Size: {item.size}</p>
               <p>Quantity: {item.quantity}</p>
               <strong>
-                ₹{(item.product.price * item.quantity).toLocaleString('en-IN')}
+                {"\u20B9"}{(item.product.price * item.quantity).toLocaleString('en-IN')}
               </strong>
             </div>
           </div>
@@ -340,7 +831,7 @@ if (showPayment) {
 
         <div className="checkout-total">
           <span>Total Amount</span>
-          <strong>₹{cartSubtotal.toLocaleString('en-IN')}</strong>
+          <strong>{"\u20B9"}{cartSubtotal.toLocaleString('en-IN')}</strong>
         </div>
       </aside>
     </div>
@@ -362,7 +853,7 @@ if (showCheckout) {
         className="back-shopping"
         onClick={() => setShowCheckout(false)}
       >
-        ← BACK TO SHOPPING
+        BACK TO SHOPPING
       </button>
 
       <div className="checkout-container">
@@ -459,7 +950,7 @@ if (showCheckout) {
                 <p>Size: {item.size}</p>
                 <p>Quantity: {item.quantity}</p>
                 <strong>
-                  ₹{(item.product.price * item.quantity).toLocaleString('en-IN')}
+                  {"\u20B9"}{(item.product.price * item.quantity).toLocaleString('en-IN')}
                 </strong>
               </div>
             </div>
@@ -467,7 +958,7 @@ if (showCheckout) {
 
           <div className="checkout-total">
             <span>Total Amount</span>
-            <strong>₹{cartSubtotal.toLocaleString('en-IN')}</strong>
+            <strong>{"\u20B9"}{cartSubtotal.toLocaleString('en-IN')}</strong>
           </div>
 
           <button
@@ -475,7 +966,7 @@ if (showCheckout) {
             type="submit"
             form="checkout-form"
           >
-            CONTINUE TO PAYMENT →
+            CONTINUE TO PAYMENT
           </button>
         </aside>
       </div>
@@ -487,7 +978,7 @@ return (
     <main className="website">
 
       <div className="announcement">
-        <span>KENZUKA â€” STYLE THAT MOVES WITH YOU.</span>
+        <span>KENZUKA | QUALITY FIRST | MADE FOR EVERYDAY | STYLE WITHOUT LIMITS</span>
         <span>DISCOVER YOUR NEXT LOOK <ArrowUpRight size={13} /></span>
       </div>
 
@@ -512,68 +1003,137 @@ return (
           <a href="#about" onClick={() => setMenuOpen(false)}>OUR STORY</a>
         </nav>
 
-    <div className="nav-actions">
-  <button aria-label="Search">
-    <Search />
-  </button>
+           <div className="nav-actions">
+          <button
+  aria-label="Search products"
+  onClick={() => {
+    setShowSearch((previous) => !previous)
+    setShowWishlistOnly(false)
+    document.getElementById('arrivals')?.scrollIntoView({ behavior: 'smooth' })
+  }}
+>
+  <Search />
+</button>
 
-  <button aria-label="Wishlist">
-    <Heart />
-  </button>
+          <button
+            aria-label="My account"
+            onClick={() => {
+              setAuthError('')
+              setShowAccount(true)
+            }}
+          >
+            <UserRound />
+          </button>
 
-  <button
-    className="cart-icon-button"
-    aria-label={`Shopping bag with ${cartCount} items`}
-    onClick={() => setShowCart(true)}
-  >
-    <ShoppingBag />
-    {cartCount > 0 && (
-      <span className="cart-count">{cartCount}</span>
-    )}
-  </button>
-           </div>
+          {/* WISHLIST BUTTON */}
+          <button
+            aria-label="Wishlist"
+            title="View Wishlist"
+            onClick={() => {
+  setShowWishlistPage(true)
+  setShowWishlistOnly(true)
+  document.getElementById('arrivals')?.scrollIntoView({
+    behavior: 'smooth',
+  })
+}}
+          >
+            <Heart
+              fill={showWishlistOnly ? 'currentColor' : 'none'}
+            />
+          </button>
+
+          {/* SHOPPING CART BUTTON */}
+          <button
+            className="cart-icon-button"
+            aria-label={`Shopping bag with ${cartCount} items`}
+            onClick={() => setShowCart(true)}
+          >
+            <ShoppingBag />
+            {cartCount > 0 && (
+              <span className="cart-count">{cartCount}</span>
+            )}
+          </button>
+
+        </div>
       </header>
 
-      <section className="hero" id="home">
-        <div className="hero-image">
-          <img
-            src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=2000"
-            alt="KENZUKA fashion campaign"
-          />
-        </div>
 
-        <div className="hero-overlay" />
 
-        <div className="hero-content">
-          <p className="hero-label">THE NEW GENERATION OF STYLE</p>
-          <h1>
-            NOT MADE
-            <br />
-            TO <span>BLEND.</span>
-          </h1>
-          <p className="hero-description">
-            Express yourself. Break the ordinary.
-            <br />
-            Discover fashion that speaks your language.
-          </p>
-          <a href="#arrivals" className="shop-button">
-            EXPLORE COLLECTION <ArrowUpRight size={18} />
-          </a>
-        </div>
+<section className="shop-showcase" id="home">
+  <div className="shop-showcase-glow" />
 
-        <div className="hero-bottom">
-          <span>KENZUKA / EST. 2026</span>
-          <span>STYLE HAS NO RULES.</span>
-        </div>
+  <div className="shop-showcase-content">
+    <p className="shop-showcase-label">
+      KENZUKA / THE NEW COLLECTION
+    </p>
 
-        <div className="hero-index">01 â€” 04</div>
-      </section>
+    <h1>
+      WEAR
+      <br />
+      YOUR <span>IDENTITY.</span>
+    </h1>
+
+    <p className="shop-showcase-description">
+      Not just clothing. An expression of who you are.
+      <br />
+      Discover your style. Make your statement.
+    </p>
+
+    <a href="#arrivals" className="shop-showcase-button">
+      EXPLORE COLLECTION <ArrowUpRight size={18} />
+    </a>
+
+    <div className="shop-showcase-counter">
+      <span>01</span>
+      <span>â€”</span>
+      <span>KENZUKA / 2026</span>
+    </div>
+  </div>
+
+  <div className="shop-orbit-scene">
+    <div className="shop-orbit-platform" />
+
+    <div className="shop-orbit-ring">
+      {products.slice(0, 8).map((product, index) => (
+        <button
+          type="button"
+          className="shop-orbit-shirt"
+          key={product._id}
+          style={{
+            '--shirt-angle': `${(index * 360) / Math.min(products.length, 8)}deg`,
+          } as CSSProperties}
+         onClick={() => {
+  setSelectedProduct(product)
+  setSelectedSize('')
+  setSelectedImageIndex(0)
+}}
+          aria-label={`View ${product.name}`}
+        >
+          <img src={product.image} alt={product.name} />
+          <span>{product.name}</span>
+        </button>
+      ))}
+    </div>
+
+    <div className="shop-orbit-caption">
+      KENZUKA COLLECTION
+    </div>
+  </div>
+
+  <div className="shop-showcase-bottom">
+    <span>QUALITY FIRST</span>
+    <span>STYLE WITHOUT LIMITS</span>
+    <span>MADE FOR EVERYDAY</span>
+  </div>
+</section>
+
+
 
       <section className="benefits">
-        <div>âœ¦ QUALITY FIRST</div>
-        <div>âœ¦ MADE FOR EVERYDAY</div>
-        <div>âœ¦ STYLE WITHOUT LIMITS</div>
-        <div>âœ¦ YOUR STYLE. YOUR STORY.</div>
+        <div>{"\u2726"} QUALITY FIRST</div>
+        <div>{"\u2726"} MADE FOR EVERYDAY</div>
+        <div>{"\u2726"} STYLE WITHOUT LIMITS</div>
+        <div>{"\u2726"} YOUR STYLE. YOUR STORY.</div>
       </section>
 
       <section className="collections section" id="collections">
@@ -603,42 +1163,186 @@ return (
       <section className="arrivals section" id="arrivals">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">FRESH FROM KENZUKA</p>
-            <h2>NEW <span>ARRIVALS.</span></h2>
+          <p className="eyebrow">
+  {showWishlistPage ? 'YOUR SAVED PICKS' : 'FRESH FROM KENZUKA'}
+</p>
+
+<h2>
+  {showWishlistPage ? (
+    <>MY <span>WISHLIST.</span></>
+  ) : (
+    <>NEW <span>ARRIVALS.</span></>
+  )}
+</h2>
           </div>
           <a href="#arrivals">DISCOVER MORE <ArrowUpRight size={16} /></a>
         </div>
 
-        <div className="product-grid">
-          {products.map((product) => (
-            <article
-  className="product-card"
-  key={product.name}
-  onClick={() => {
-    setSelectedProduct(product)
-    setSelectedSize('')
+<div className="product-grid">
+  <div className="shop-controls">
+  {showSearch && (
+    <input
+      type="text"
+      className="product-search-input"
+      placeholder="Search KENZUKA products..."
+      value={searchTerm}
+      onChange={(event) => setSearchTerm(event.target.value)}
+    />
+  )}
+
+  <select
+    value={selectedCategory}
+    onChange={(event) => setSelectedCategory(event.target.value)}
+    aria-label="Filter by category"
+  >
+    <option value="ALL">ALL CATEGORIES</option>
+    {availableCategories.map((category) => (
+      <option key={category} value={category}>
+        {category}
+      </option>
+    ))}
+  </select>
+
+  <select
+    value={sortOrder}
+    onChange={(event) =>
+      setSortOrder(event.target.value as 'default' | 'low-high' | 'high-low')
+    }
+    aria-label="Sort products by price"
+  >
+    <option value="default">DEFAULT SORT</option>
+    <option value="low-high">PRICE: LOW TO HIGH</option>
+    <option value="high-low">PRICE: HIGH TO LOW</option>
+  </select>
+
+  {showWishlistPage && (
+  <button
+    className="clear-wishlist-filter"
+    onClick={() => {
+      setShowWishlistPage(false)
+      setShowWishlistOnly(false)
+    }}
+  >
+    CONTINUE SHOPPING
+  </button>
+)}
+</div>
+  {productsLoading ? (
+    <p>Loading KENZUKA collection...</p>
+  ) : productsError ? (
+    <p>{productsError}</p>
+    ) : products.length === 0 ? (
+    <p>No products available right now.</p>
+  ) : filteredProducts.length === 0 ? (
+    <p className="no-products-message">
+      {showWishlistOnly
+        ? 'Your wishlist is empty. Add your favourite products!'
+        : 'No matching products found.'}
+    </p>
+  ) : (
+    filteredProducts.map((product) => (
+      <article
+        className="product-card"
+        key={product._id}
+        onClick={() => {
+          setSelectedProduct(product)
+          setSelectedSize('')
+        }}
+        style={{ cursor: 'pointer' }}
+      >
+        <div className="product-image">
+          <img src={product.image} alt={product.name} />
+          <span className="product-tag">{product.tag}</span>
+
+         <button
+  className={`wishlist-heart ${
+    wishlist.includes(product._id) ? 'wishlisted' : ''
+  }`}
+  aria-label={
+    wishlist.includes(product._id)
+      ? `Remove ${product.name} from wishlist`
+      : `Add ${product.name} to wishlist`
+  }
+  aria-pressed={wishlist.includes(product._id)}
+  onClick={(event) => {
+    event.stopPropagation()
+    toggleWishlist(product._id)
   }}
-  style={{ cursor: 'pointer' }}
 >
-              <div className="product-image">
-                <img src={product.image} alt={product.name} />
-                <span className="product-tag">{product.tag}</span>
-               <button
-  aria-label={`Add ${product.name} to wishlist`}
-  onClick={(event) => event.stopPropagation()}
->
-                  <Heart size={18} />
-                </button>
-              </div>
-              <div className="product-info">
-                <h3>{product.name}</h3>
-             <p>₹{product.price.toLocaleString('en-IN')}</p>
-              </div>
-            </article>
-          ))}
+  <Heart
+    size={18}
+    fill={wishlist.includes(product._id) ? 'currentColor' : 'none'}
+  />
+</button>
         </div>
-    
+
+        <div className="product-info">
+          <h3>{product.name}</h3>
+          <p>{"\u20B9"}{product.price.toLocaleString('en-IN')}</p>
+        </div>
+      </article>
+    ))
+  )}
+</div>
+
       </section>
+      {/* FULL SCREEN PRODUCT IMAGE VIEWER */}
+{isImageZoomOpen && selectedProduct && (
+  <div
+    className="image-zoom-overlay"
+    onClick={() => setIsImageZoomOpen(false)}
+  >
+    <button
+      className="image-zoom-close"
+      onClick={() => setIsImageZoomOpen(false)}
+      aria-label="Close image viewer"
+    >
+      <X size={28} />
+    </button>
+
+    {selectedProduct.images?.length > 1 && (
+      <>
+        <button
+          className="image-zoom-arrow image-zoom-prev"
+          onClick={(event) => {
+            event.stopPropagation()
+            setSelectedImageIndex((current) =>
+              current === 0
+                ? selectedProduct.images.length - 1
+                : current - 1
+            )
+          }}
+          aria-label="Previous image"
+        >
+          â€¹
+        </button>
+
+        <button
+          className="image-zoom-arrow image-zoom-next"
+          onClick={(event) => {
+            event.stopPropagation()
+            setSelectedImageIndex((current) =>
+              (current + 1) % selectedProduct.images.length
+            )
+          }}
+          aria-label="Next image"
+        >
+          â€º
+        </button>
+      </>
+    )}
+
+    <img
+      className="image-zoom-full"
+      src={
+        selectedProduct.images?.[selectedImageIndex] ||
+        selectedProduct.image
+      }
+      alt={selectedProduct.name}
+      onClick={(event) => event.stopPropagation()}
+    />
+  </div>
+)}
 {/* PRODUCT DETAILS POPUP */}
 {selectedProduct && (
   <div
@@ -656,25 +1360,45 @@ return (
       >
         <X size={24} />
       </button>
+<div className="product-modal-image">
+  <img
+  src={
+    selectedProduct.images?.[selectedImageIndex] ||
+    selectedProduct.image
+  }
+  alt={selectedProduct.name}
+  onClick={() => setIsImageZoomOpen(true)}
+  title="Click to view full screen"
+/>
 
-      <div className="product-modal-image">
-        <img
-          src={selectedProduct.image}
-          alt={selectedProduct.name}
-        />
-      </div>
+  {selectedProduct.images?.length > 1 && (
+    <div className="product-image-thumbnails">
+      {selectedProduct.images.map((image, index) => (
+        <button
+          key={`${image}-${index}`}
+          type="button"
+          className={selectedImageIndex === index ? 'active' : ''}
+          onClick={() => setSelectedImageIndex(index)}
+          aria-label={`View product image ${index + 1}`}
+        >
+          <img src={image} alt={`${selectedProduct.name} view ${index + 1}`} />
+        </button>
+      ))}
+    </div>
+  )}
+</div>
 
       <div className="product-modal-info">
         <p className="eyebrow">KENZUKA COLLECTION</p>
 
         <h2>{selectedProduct.name}</h2>
 
-        <h3>₹{selectedProduct.price.toLocaleString('en-IN')}</h3>
+        <h3>{"\u20B9"}{selectedProduct.price.toLocaleString('en-IN')}</h3>
 
         <p className="size-heading">SELECT YOUR SIZE</p>
 
         <div className="size-options">
-          {['S', 'M', 'L', 'XL'].map((size) => (
+         {selectedProduct.sizes.map((size) => (
             <button
               key={size}
               className={selectedSize === size ? 'selected' : ''}
@@ -726,9 +1450,50 @@ return (
   <ShoppingBag size={18} />
 </button>
 
-        <p className="product-modal-note">
-          STYLE THAT MOVES WITH YOU.
-        </p>
+<button
+  className="buy-now-button"
+  disabled={!selectedSize}
+  onClick={() => {
+    if (!selectedProduct || !selectedSize) return
+
+    setCart((currentCart) => {
+      const existingItem = currentCart.find(
+        (item) =>
+          item.product.name === selectedProduct.name &&
+          item.size === selectedSize
+      )
+
+      if (existingItem) {
+        return currentCart.map((item) =>
+          item.product.name === selectedProduct.name &&
+          item.size === selectedSize
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      }
+
+      return [
+        ...currentCart,
+        {
+          product: selectedProduct,
+          size: selectedSize,
+          quantity: 1,
+        },
+      ]
+    })
+
+    setSelectedProduct(null)
+    setSelectedSize('')
+    setShowCart(false)
+    setShowCheckout(true)
+  }}
+>
+  BUY NOW
+</button>
+
+<p className="product-modal-note">
+  STYLE THAT MOVES WITH YOU.
+</p>
       </div>
     </div>
   </div>
@@ -778,7 +1543,7 @@ return (
                   <h3>{item.product.name}</h3>
                   <p>Size: {item.size}</p>
                   <p>
-                    ₹{item.product.price.toLocaleString('en-IN')}
+                    {"\u20B9"}{item.product.price.toLocaleString('en-IN')}
                   </p>
 
                   <div className="cart-quantity">
@@ -798,7 +1563,7 @@ return (
                         )
                       }}
                     >
-                      −
+                      -
                     </button>
 
                     <span>{item.quantity}</span>
@@ -838,7 +1603,7 @@ return (
           <div className="cart-summary">
             <div>
               <span>Subtotal</span>
-              <strong>₹{cartSubtotal.toLocaleString('en-IN')}</strong>
+              <strong>{"\u20B9"}{cartSubtotal.toLocaleString('en-IN')}</strong>
             </div>
 
             <p>Shipping charges calculated at checkout.</p>
@@ -950,15 +1715,464 @@ return (
           <span>FOLLOW OUR JOURNEY</span>
         </div>
         <div className="footer-bottom">
-          <span>Â© 2026 KENZUKA. ALL RIGHTS RESERVED.</span>
+          <span>{"\u00A9"} 2026 KENZUKA. ALL RIGHTS RESERVED.</span>
           <span>BUILT FOR INDIVIDUALITY.</span>
         </div>
       </footer>
+            {/* ACCOUNT MODAL */}
+      {showAccount && (
+        <div
+          className="account-overlay"
+          onClick={() => setShowAccount(false)}
+        >
+          <div
+            className="account-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="account-close"
+              onClick={() => setShowAccount(false)}
+              aria-label="Close account"
+            >
+              <X />
+            </button>
+
+          {currentUser ? (
+  showOrders ? (
+    <div className="account-orders">
+      <button
+        className="orders-back"
+        onClick={() => setShowOrders(false)}
+      >
+        ? BACK TO ACCOUNT
+      </button>
+
+      <p className="eyebrow">KENZUKA ACCOUNT</p>
+      <h2>MY ORDERS.</h2>
+      <p className="orders-subtitle">
+        Your purchases and delivery updates.
+      </p>
+
+      {ordersLoading ? (
+        <p className="orders-message">Loading your orders...</p>
+      ) : ordersError ? (
+        <p className="account-error">{ordersError}</p>
+      ) : customerOrders.length === 0 ? (
+        <div className="orders-empty">
+          <p>NO ORDERS YET.</p>
+          <span>Your orders will appear here after checkout.</span>
+        </div>
+      ) : (
+        <div className="orders-list">
+          {customerOrders.map((order) => (
+            <article className="customer-order-card" key={order._id}>
+              <div className="customer-order-heading">
+                <div>
+                  <span className="order-label">ORDER ID</span>
+                  <strong>#{order._id.slice(-8).toUpperCase()}</strong>
+                </div>
+
+                <span className={`order-status status-${order.orderStatus.toLowerCase()}`}>
+                  {order.orderStatus}
+                </span>
+              </div>
+
+              <p className="order-date">
+                {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </p>
+
+              <div className="customer-order-items">
+                {order.orderItems.map((item, index) => {
+                  const productImage =
+                    typeof item.product === 'object' && item.product
+                      ? item.product.images?.[0]
+                      : undefined
+
+                  return (
+                    <div
+                      className="customer-order-item"
+                      key={`${order._id}-${index}`}
+                    >
+                      <img
+                        src={productImage || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200'}
+                        alt={item.name}
+                      />
+
+                      <div className="customer-order-item-info">
+                        <strong>{item.name}</strong>
+                        <span>Size: {item.size}</span>
+                        <span>Qty: {item.quantity}</span>
+                      </div>
+
+                      <strong className="order-item-price">
+                        {"\u20B9"}{(item.price * item.quantity).toLocaleString('en-IN')}
+                      </strong>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="customer-order-details">
+                <span>Payment method</span>
+                <strong>{order.paymentMethod}</strong>
+
+                <span>Payment status</span>
+                <strong>{order.paymentStatus}</strong>
+
+                <span>Delivery fee</span>
+                <strong>{"\u20B9"}{order.deliveryFee}</strong>
+              </div>
+
+              <div className="customer-order-total">
+                <span>TOTAL</span>
+                <strong>
+                  {"\u20B9"}{order.totalPrice.toLocaleString('en-IN')}
+                </strong>
+              </div>
+
+              <div className="order-shipping">
+                <span>DELIVERING TO</span>
+                <p>{order.shippingAddress.fullName}</p>
+                <p>
+                  {order.shippingAddress.address}, {order.shippingAddress.city}
+                </p>
+                <p>PIN: {order.shippingAddress.pincode}</p>
+              </div>
+            </article>
+          ))}
+           </div>
+      )}
+    </div>
+  ) : accountView === 'profile' ? (
+    <div className="account-profile">
+      <button className="orders-back" onClick={() => {
+        setAccountView('home')
+        setAccountActionError('')
+        setAccountActionSuccess('')
+      }}>
+        ? BACK TO ACCOUNT
+      </button>
+
+      <p className="eyebrow">KENZUKA ACCOUNT</p>
+      <h2>EDIT PROFILE.</h2>
+
+      <form className="account-form" onSubmit={(event) => {
+        event.preventDefault()
+        void handleSaveProfile()
+      }}>
+        <label htmlFor="profile-name">FULL NAME</label>
+        <input
+          id="profile-name"
+          value={profileName}
+          onChange={(event) => setProfileName(event.target.value)}
+          minLength={2}
+          maxLength={80}
+          required
+        />
+
+        <label htmlFor="profile-email">EMAIL ADDRESS</label>
+        <input
+          id="profile-email"
+          type="email"
+          value={profileEmail}
+          onChange={(event) => setProfileEmail(event.target.value)}
+          required
+        />
+
+        {accountActionError && <p className="account-error">{accountActionError}</p>}
+
+        <button className="account-submit" type="submit" disabled={accountActionLoading}>
+          {accountActionLoading ? 'SAVING...' : 'SAVE PROFILE'}
+        </button>
+      </form>
+    </div>
+  ) : accountView === 'address' ? (
+    <div className="account-profile">
+      <button className="orders-back" onClick={() => {
+        setAccountView('home')
+        setAccountActionError('')
+        setAccountActionSuccess('')
+      }}>
+        ? BACK TO ACCOUNT
+      </button>
+
+      <p className="eyebrow">DELIVERY DETAILS</p>
+      <h2>SAVED ADDRESS.</h2>
+
+      <form className="account-form" onSubmit={(event) => {
+        event.preventDefault()
+        void handleSaveAddress()
+      }}>
+        <label htmlFor="saved-fullname">FULL NAME</label>
+        <input
+          id="saved-fullname"
+          value={savedAddressForm.fullName}
+          onChange={(event) => setSavedAddressForm({
+            ...savedAddressForm,
+            fullName: event.target.value,
+          })}
+          maxLength={80}
+          required
+        />
+
+        <label htmlFor="saved-address">HOUSE / STREET / AREA</label>
+        <textarea
+          id="saved-address"
+          value={savedAddressForm.address}
+          onChange={(event) => setSavedAddressForm({
+            ...savedAddressForm,
+            address: event.target.value,
+          })}
+          maxLength={200}
+          required
+        />
+
+        <label htmlFor="saved-city">CITY</label>
+        <input
+          id="saved-city"
+          value={savedAddressForm.city}
+          onChange={(event) => setSavedAddressForm({
+            ...savedAddressForm,
+            city: event.target.value,
+          })}
+          maxLength={80}
+          required
+        />
+
+        <label htmlFor="saved-pincode">PINCODE</label>
+        <input
+          id="saved-pincode"
+          value={savedAddressForm.pincode}
+          onChange={(event) => setSavedAddressForm({
+            ...savedAddressForm,
+            pincode: event.target.value,
+          })}
+          pattern="[0-9]{6}"
+          maxLength={6}
+          required
+        />
+
+        <label htmlFor="saved-phone">PHONE NUMBER</label>
+        <input
+          id="saved-phone"
+          type="tel"
+          value={savedAddressForm.phone}
+          onChange={(event) => setSavedAddressForm({
+            ...savedAddressForm,
+            phone: event.target.value,
+          })}
+          pattern="[6-9][0-9]{9}"
+          maxLength={10}
+          required
+        />
+
+        {accountActionError && <p className="account-error">{accountActionError}</p>}
+
+        <button className="account-submit" type="submit" disabled={accountActionLoading}>
+          {accountActionLoading ? 'SAVING...' : 'SAVE ADDRESS'}
+        </button>
+      </form>
+    </div>
+  ) : (
+    <div className="account-profile">
+      <p className="eyebrow">KENZUKA ACCOUNT</p>
+
+      <h2>WELCOME BACK.</h2>
+
+      <div className="account-user-icon">
+        <UserRound size={30} />
+      </div>
+
+      <h3>{currentUser.name}</h3>
+      <p>{currentUser.email}</p>
+
+      <span className="account-role">
+        {currentUser.role.toUpperCase()}
+      </span>
+
+      {accountActionSuccess && (
+        <p className="orders-message">{accountActionSuccess}</p>
+      )}
+
+      {currentUser.role === 'admin' && (
+        <p className="account-admin-note">
+          Administrator account detected.
+        </p>
+      )}
+
+      {currentUser.role === 'customer' && (
+        <>
+          <button className="account-submit" onClick={() => void handleViewOrders()}>
+            MY ORDERS
+          </button>
+
+          <button className="account-submit" onClick={() => {
+            setAccountView('profile')
+            setProfileName(currentUser.name)
+            setProfileEmail(currentUser.email)
+            setAccountActionError('')
+            setAccountActionSuccess('')
+          }}>
+            EDIT PROFILE
+          </button>
+
+          <button className="account-submit" onClick={() => {
+            setAccountView('address')
+            setAccountActionError('')
+            setAccountActionSuccess('')
+          }}>
+            SAVED ADDRESS
+          </button>
+        </>
+      )}
+
+      <button className="account-submit" onClick={handleLogout}>
+        LOG OUT
+      </button>
+       </div>
+  )
+  ) : (
+    <>
+      <p className="eyebrow">STYLE THAT MOVES WITH YOU</p>
+
+<h2>
+  {authStep === 'name'
+    ? 'ALMOST THERE.'
+    : authStep === 'otp'
+      ? 'CHECK YOUR EMAIL.'
+      : authStep === 'password'
+        ? 'WELCOME BACK.'
+        : 'WELCOME TO KENZUKA.'}
+</h2>
+
+<p className="account-description">
+  {authStep === 'email'
+    ? 'Enter your email to continue.'
+    : authStep === 'otp'
+      ? 'Enter the 6-digit verification code sent to your email.'
+      : authStep === 'password'
+        ? 'Enter your admin password to continue.'
+        : 'Enter your name to complete your account.'}
+</p>
+
+<form
+  className="account-form"
+  onSubmit={(event) => {
+    event.preventDefault()
+    void handleAuthSubmit()
+  }}
+>
+  {authStep === 'name' && (
+    <>
+      <label htmlFor="auth-name">FULL NAME</label>
+      <input
+        id="auth-name"
+        type="text"
+        placeholder="Enter your full name"
+        value={authName}
+        onChange={(event) => setAuthName(event.target.value)}
+        minLength={2}
+        maxLength={80}
+        required
+      />
+    </>
+  )}
+
+  <label htmlFor="auth-email">EMAIL ADDRESS</label>
+  <input
+    id="auth-email"
+    type="email"
+    placeholder="Enter your email"
+    value={authEmail}
+    onChange={(event) => setAuthEmail(event.target.value)}
+    readOnly={authStep !== 'email'}
+    required
+  />
+
+  {authStep === 'otp' && (
+    <>
+      <label htmlFor="auth-otp">EMAIL VERIFICATION CODE</label>
+      <input
+        id="auth-otp"
+        type="text"
+        inputMode="numeric"
+        placeholder="Enter your 6-digit OTP"
+        value={authOtp}
+        onChange={(event) =>
+          setAuthOtp(event.target.value.replace(/\D/g, '').slice(0, 6))
+        }
+        pattern="[0-9]{6}"
+        maxLength={6}
+        required
+      />
+    </>
+  )}
+
+  {authStep === 'password' && (
+    <>
+      <label htmlFor="auth-password">ADMIN PASSWORD</label>
+      <input
+        id="auth-password"
+        type="password"
+        placeholder="Enter your admin password"
+        value={authPassword}
+        onChange={(event) => setAuthPassword(event.target.value)}
+        required
+      />
+    </>
+  )}
+
+  {authError && (
+    <p className="account-error">{authError}</p>
+  )}
+
+  <button
+    className="account-submit"
+    type="submit"
+    disabled={authLoading}
+  >
+    {authLoading
+      ? 'PLEASE WAIT...'
+      : authStep === 'email'
+        ? 'CONTINUE'
+        : authStep === 'otp'
+          ? 'VERIFY OTP'
+          : authStep === 'password'
+            ? 'SIGN IN'
+            : 'CREATE ACCOUNT'}
+  </button>
+</form>
+
+{authStep !== 'email' && (
+  <p className="account-switch">
+    Wrong email or want to start again?
+
+    <button
+      type="button"
+      onClick={() => {
+        setAuthStep('email')
+        setAuthName('')
+        setAuthPassword('')
+        setAuthOtp('')
+        setRegistrationToken('')
+        setAuthError('')
+      }}
+    >
+      CHANGE EMAIL
+    </button>
+  </p>
+)}
+            </>
+          )}
+          </div>
+        </div>
+      )}
     </main>
   )
 }
 
 export default App
-
-
-

@@ -3,7 +3,6 @@ import User from '../models/User.js'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
-// Generate JWT token
 const generateToken = (userId) => {
   return jwt.sign(
     { id: userId },
@@ -12,162 +11,36 @@ const generateToken = (userId) => {
   )
 }
 
-// Validate email format
-const isValidEmail = (email) => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
-
-// Customer Registration
-export const registerUser = async (req, res) => {
-  try {
-    const { name, email, password } = req.body || {}
-
-    if (
-      typeof name !== 'string' ||
-      typeof email !== 'string' ||
-      typeof password !== 'string'
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide valid name, email and password.',
-      })
-    }
-
-    const normalizedName = name.trim()
-    const normalizedEmail = email.trim().toLowerCase()
-
-    if (normalizedName.length < 2 || normalizedName.length > 80) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name must contain between 2 and 80 characters.',
-      })
-    }
-
-    if (
-      normalizedEmail.length > 254 ||
-      !isValidEmail(normalizedEmail)
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide a valid email address.',
-      })
-    }
-
-    if (password.length < 6 || Buffer.byteLength(password, 'utf8') > 72) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must contain at least 6 characters and cannot exceed 72 bytes.',
-      })
-    }
-
-    const existingUser = await User.findOne({
-      email: normalizedEmail,
-    })
-
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: 'Email is already registered.',
-      })
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 12)
-
-    const user = await User.create({
-      name: normalizedName,
-      email: normalizedEmail,
-      password: hashedPassword,
-      role: 'customer',
-    })
-
-    const token = generateToken(user._id)
-
-    return res.status(201).json({
-      success: true,
-      message: 'Registration successful.',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    })
-  } catch (error) {
-    console.error('Registration error:', error.message)
-
-    if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        message: 'Email is already registered.',
-      })
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: 'Unable to complete registration.',
-    })
-  }
-}
-
-// Customer Login
+// Admin and legacy password login
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body || {}
 
     if (
       typeof email !== 'string' ||
-      typeof password !== 'string' ||
-      !email.trim() ||
-      !password
+      typeof password !== 'string'
     ) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid email and password.',
-      })
-    }
-
-    const normalizedEmail = email.trim().toLowerCase()
-
-    if (
-      normalizedEmail.length > 254 ||
-      !isValidEmail(normalizedEmail)
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide a valid email address.',
+        message: 'Please provide your email and password.',
       })
     }
 
     const user = await User.findOne({
-      email: normalizedEmail,
+      email: email.trim().toLowerCase(),
     }).select('+password')
 
-    if (!user) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password.',
       })
     }
-
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      user.password
-    )
-
-    if (!isPasswordCorrect) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password.',
-      })
-    }
-
-    const token = generateToken(user._id)
 
     return res.status(200).json({
       success: true,
       message: 'Login successful.',
-      token,
+      token: generateToken(user._id),
       user: {
         id: user._id,
         name: user.name,
@@ -180,7 +53,177 @@ export const loginUser = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: 'Unable to complete login.',
+      message: 'Unable to log in.',
+    })
+  }
+}
+
+// Get customer profile
+export const getMyProfile = async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        savedAddress: req.user.savedAddress,
+      },
+    })
+  } catch (error) {
+    console.error('Get profile error:', error.message)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to retrieve profile.',
+    })
+  }
+}
+
+// Update customer profile
+export const updateProfile = async (req, res) => {
+  try {
+    const { name } = req.body || {}
+
+    if (
+      typeof name !== 'string' ||
+      name.trim().length < 2 ||
+      name.trim().length > 80
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name must contain between 2 and 80 characters.',
+      })
+    }
+
+    req.user.name = name.trim()
+    await req.user.save()
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully.',
+      user: {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        savedAddress: req.user.savedAddress,
+      },
+    })
+  } catch (error) {
+    console.error('Update profile error:', error.message)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to update profile.',
+    })
+  }
+}
+
+// Change customer password
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {}
+
+    if (
+      typeof currentPassword !== 'string' ||
+      typeof newPassword !== 'string'
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide both passwords.',
+      })
+    }
+
+    if (
+      newPassword.length < 6 ||
+      Buffer.byteLength(newPassword, 'utf8') > 72
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must contain at least 6 characters and cannot exceed 72 bytes.',
+      })
+    }
+
+    const user = await User.findById(req.user._id).select('+password')
+
+    if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect.',
+      })
+    }
+
+    user.password = await bcrypt.hash(newPassword, 12)
+    await user.save()
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password changed successfully.',
+    })
+  } catch (error) {
+    console.error('Change password error:', error.message)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to change password.',
+    })
+  }
+}
+
+// Save customer shipping address
+export const saveShippingAddress = async (req, res) => {
+  try {
+    const { fullName, address, city, pincode, phone } = req.body || {}
+
+    if (
+      typeof fullName !== 'string' ||
+      typeof address !== 'string' ||
+      typeof city !== 'string' ||
+      typeof pincode !== 'string' ||
+      typeof phone !== 'string'
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide all shipping address fields.',
+      })
+    }
+
+    if (
+      fullName.trim().length < 2 ||
+      address.trim().length < 5 ||
+      city.trim().length < 2 ||
+      !/^\d{6}$/.test(pincode.trim()) ||
+      !/^\d{10}$/.test(phone.trim())
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide valid shipping address details.',
+      })
+    }
+
+    req.user.savedAddress = {
+      fullName: fullName.trim(),
+      address: address.trim(),
+      city: city.trim(),
+      pincode: pincode.trim(),
+      phone: phone.trim(),
+    }
+
+    await req.user.save()
+
+    return res.status(200).json({
+      success: true,
+      message: 'Shipping address saved successfully.',
+      savedAddress: req.user.savedAddress,
+    })
+  } catch (error) {
+    console.error('Save address error:', error.message)
+
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to save shipping address.',
     })
   }
 }

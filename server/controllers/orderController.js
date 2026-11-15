@@ -2,6 +2,11 @@
 import mongoose from 'mongoose'
 import Order from '../models/Order.js'
 import Product from '../models/Product.js'
+import {
+  sendOrderConfirmationEmail,
+  sendAdminNewOrderEmail,
+  sendOrderStatusEmail,
+} from '../config/email.js'
 
 // Place a new order
 export const createOrder = async (req, res) => {
@@ -176,7 +181,23 @@ const finalOrderItems = Array.from(combinedItems.values())
       order = createdOrders[0]
     })
 
-    res.status(201).json({
+
+
+    // Send notifications after the order transaction succeeds.
+    const emailResults = await Promise.allSettled([
+      sendOrderConfirmationEmail(req.user.email, order),
+      sendAdminNewOrderEmail(order, {
+        name: req.user.name,
+        email: req.user.email,
+      }),
+    ])
+
+    emailResults.forEach((result) => {
+      if (result.status === 'rejected') {
+        console.error('Order notification email failed:', result.reason)
+      }
+    })
+res.status(201).json({
       success: true,
       message: 'Order placed successfully.',
       order,
@@ -323,7 +344,27 @@ if (typeof orderStatus !== 'string') {
       updatedOrder = order
     })
 
-    res.status(200).json({
+
+
+    // Notify the customer after the status transaction succeeds.
+    try {
+      await updatedOrder.populate('user', 'name email')
+
+      if (updatedOrder.user?.email) {
+        const emailResults = await Promise.allSettled([
+          sendOrderStatusEmail(updatedOrder.user.email, updatedOrder),
+        ])
+
+        emailResults.forEach((result) => {
+          if (result.status === 'rejected') {
+            console.error('Order status email failed:', result.reason)
+          }
+        })
+      }
+    } catch (emailError) {
+      console.error('Unable to send order status notification:', emailError)
+    }
+res.status(200).json({
       success: true,
       message: 'Order status updated successfully.',
       order: updatedOrder,
