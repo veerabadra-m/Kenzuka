@@ -1,5 +1,5 @@
-﻿import { useEffect, useState, type CSSProperties } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { getProducts, type ApiProduct } from './services/api'
 import {
   createOrder,
@@ -16,6 +16,9 @@ import {
   getMyProfile,
   updateMyProfile,
   saveMyAddress,
+  requestAdminPasswordReset,
+  verifyAdminPasswordResetOtp,
+  resetAdminPassword,
   type AuthUser,
   type SavedAddress,
 } from './services/authService'
@@ -25,41 +28,86 @@ import {
   Menu,
   X,
   ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
   Camera,
   Heart,
   UserRound,
 } from 'lucide-react'
 import LandingPage from './LandingPage'
+import ProductsPage from './ProductsPage'
+import ProductDetailPage from './ProductDetailPage'
 import './App.css'
 const categories = [
   {
-    name: 'T-SHIRTS',
-    subtitle: 'Everyday statements',
+    name: 'OVERSIZED T-SHIRT',
+    subtitle: 'Relaxed fits. Bold statements.',
     image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800',
   },
   {
-    name: 'STREETWEAR',
-    subtitle: 'Own your identity',
-    image: 'https://images.unsplash.com/photo-1523398002811-999ca8dec234?w=800',
+    name: 'CAP',
+    subtitle: 'Finish your look.',
+    image: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800',
   },
   {
-    name: 'JACKETS',
-    subtitle: 'Make an entrance',
-    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800',
-  },
-  {
-    name: 'ESSENTIALS',
-    subtitle: 'Made to stand out',
-    image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800',
+    name: 'JEANS PANT',
+    subtitle: 'Everyday denim. Your style.',
+    image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800',
   },
 ]
 type StoreProduct = ApiProduct & {
   image: string
   tag: string
 }
+
+const getProductSlug = (product: StoreProduct) => {
+  const nameSlug = product.name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  return `${nameSlug}-${product._id}`
+}
+
 function App() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [showShop, setShowShop] = useState(false)
+  const [activeCategory, setActiveCategory] = useState(0)
+
+  // COLLECTION CAROUSEL KEYBOARD NAVIGATION
+  useEffect(() => {
+    const handleCollectionKeys = (event: KeyboardEvent) => {
+      if (
+        location.pathname !== '/' ||
+        !showShop ||
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        event.target instanceof HTMLSelectElement ||
+        (event.target instanceof HTMLElement && event.target.isContentEditable)
+      ) {
+        return
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        setActiveCategory((current) =>
+          (current - 1 + categories.length) % categories.length
+        )
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        setActiveCategory((current) =>
+          (current + 1) % categories.length
+        )
+      }
+    }
+
+    window.addEventListener('keydown', handleCollectionKeys)
+    return () => window.removeEventListener('keydown', handleCollectionKeys)
+  }, [location.pathname, showShop])
     // ACCOUNT / AUTHENTICATION
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(
     () => getStoredUser()
@@ -91,7 +139,7 @@ const [accountActionLoading, setAccountActionLoading] = useState(false)
 const [accountActionError, setAccountActionError] = useState('')
 const [accountActionSuccess, setAccountActionSuccess] = useState('')
 const [authStep, setAuthStep] = useState<
-  'email' | 'otp' | 'password' | 'name'
+  'email' | 'otp' | 'password' | 'name' | 'forgot-email' | 'forgot-otp' | 'reset-password'
 >('email')
 
 const [authName, setAuthName] = useState('')
@@ -102,6 +150,11 @@ const [registrationToken, setRegistrationToken] = useState('')
 
 const [authLoading, setAuthLoading] = useState(false)
 const [authError, setAuthError] = useState('')
+const [authSuccess, setAuthSuccess] = useState('')
+const [recoveryOtp, setRecoveryOtp] = useState('')
+const [recoveryToken, setRecoveryToken] = useState('')
+const [recoveryNewPassword, setRecoveryNewPassword] = useState('')
+const [recoveryConfirmPassword, setRecoveryConfirmPassword] = useState('')
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [showCart, setShowCart] = useState(false)
@@ -127,8 +180,6 @@ const [orderError, setOrderError] = useState('')
   const [products, setProducts] = useState<StoreProduct[]>([])
   // PRODUCT SEARCH, FILTER AND WISHLIST
 const [searchTerm, setSearchTerm] = useState('')
-const [selectedCategory, setSelectedCategory] = useState('ALL')
-const [sortOrder, setSortOrder] = useState<'default' | 'low-high' | 'high-low'>('default')
 const [showSearch, setShowSearch] = useState(false)
 const [showWishlistOnly, setShowWishlistOnly] = useState(false)
 const [showWishlistPage, setShowWishlistPage] = useState(false)
@@ -237,35 +288,22 @@ const toggleWishlist = (productId: string) => {
   )
 }
 
-// AVAILABLE PRODUCT CATEGORIES
-const availableCategories = Array.from(
-  new Set(products.map((product) => product.category).filter(Boolean))
-)
+// SEARCH AND WISHLIST FILTER
+const filteredProducts = products.filter((product) => {
+  const matchesSearch = product.name
+    .toLowerCase()
+    .includes(searchTerm.trim().toLowerCase())
+
+  const matchesWishlist =
+    !showWishlistOnly || wishlist.includes(product._id)
+
+  return matchesSearch && matchesWishlist
+})
 
 // SEARCH, CATEGORY FILTER AND WISHLIST FILTER
-const filteredProducts = products
-  .filter((product) => {
-    const matchesSearch = product.name
-      .toLowerCase()
-      .includes(searchTerm.trim().toLowerCase())
-
-    const matchesCategory =
-      selectedCategory === 'ALL' ||
-      product.category === selectedCategory
-
-    const matchesWishlist =
-      !showWishlistOnly || wishlist.includes(product._id)
-
-    return matchesSearch && matchesCategory && matchesWishlist
-  })
-  .sort((a, b) => {
-    if (sortOrder === 'low-high') return a.price - b.price
-    if (sortOrder === 'high-low') return b.price - a.price
-    return 0
-  })
-
 const handleAuthSubmit = async () => {
   setAuthError('')
+  setAuthSuccess('')
   setAuthLoading(true)
 
   try {
@@ -304,6 +342,55 @@ const handleAuthSubmit = async () => {
       return
     }
 
+    // ADMIN PASSWORD RECOVERY - STEP 1: Send OTP
+    if (authStep === 'forgot-email') {
+      await requestAdminPasswordReset(authEmail.trim())
+      setRecoveryOtp('')
+      setRecoveryToken('')
+      setAuthStep('forgot-otp')
+      setAuthSuccess('If this email belongs to an admin account, a reset code has been sent.')
+      return
+    }
+
+    // ADMIN PASSWORD RECOVERY - STEP 2: Verify OTP
+    if (authStep === 'forgot-otp') {
+      const response = await verifyAdminPasswordResetOtp({
+        email: authEmail.trim(),
+        otp: recoveryOtp.trim(),
+      })
+
+      setRecoveryToken(response.resetToken)
+      setRecoveryOtp('')
+      setAuthStep('reset-password')
+      setAuthSuccess('')
+      return
+    }
+
+    // ADMIN PASSWORD RECOVERY - STEP 3: Save new password
+    if (authStep === 'reset-password') {
+      if (recoveryNewPassword.length < 8) {
+        throw new Error('Password must be at least 8 characters long.')
+      }
+
+      if (recoveryNewPassword !== recoveryConfirmPassword) {
+        throw new Error('Passwords do not match.')
+      }
+
+      await resetAdminPassword({
+        email: authEmail.trim(),
+        resetToken: recoveryToken,
+        newPassword: recoveryNewPassword,
+      })
+
+      setRecoveryOtp('')
+      setRecoveryToken('')
+      setRecoveryNewPassword('')
+      setRecoveryConfirmPassword('')
+      setAuthPassword('')
+      setAuthStep('password')
+      setAuthSuccess('Password updated successfully. Sign in with your new password.')
+      return
+    }
     // STEP 3: Customer OTP verification
     if (authStep === 'otp') {
       const response = await verifyCustomerOtp({
@@ -580,7 +667,38 @@ const cartSubtotal = cart.reduce(
   0
 )
 
-if (!showShop) {
+const addProductToCart = (product: StoreProduct, size: string) => {
+  setCart((currentCart) => {
+    const existingItem = currentCart.find(
+      (item) => item.product._id === product._id && item.size === size
+    )
+
+    if (existingItem) {
+      return currentCart.map((item) =>
+        item.product._id === product._id && item.size === size
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      )
+    }
+
+    return [...currentCart, { product, size, quantity: 1 }]
+  })
+}
+
+const handleProductAddToCart = (product: StoreProduct, size: string) => {
+  addProductToCart(product, size)
+}
+
+const handleProductBuyNow = (product: StoreProduct, size: string) => {
+  addProductToCart(product, size)
+  setShowCart(false)
+  setShowCheckout(true)
+}
+if (
+  !showShop &&
+  location.pathname !== '/products' &&
+  !location.pathname.startsWith('/product/')
+) {
   return <LandingPage onEnter={() => setShowShop(true)} />
 }
 
@@ -974,6 +1092,30 @@ if (showCheckout) {
   )
 }
 
+if (location.pathname.startsWith('/product/')) {
+  const productId = location.pathname.match(/([a-f\d]{24})$/i)?.[1]
+  const routeProduct =
+    products.find((product) => product._id === productId) ?? null
+
+  return (
+    <ProductDetailPage
+      product={routeProduct}
+      loading={productsLoading}
+      error={productsError}
+      onAddToCart={handleProductAddToCart}
+      onBuyNow={handleProductBuyNow}
+    />
+  )
+}
+if (location.pathname === '/products') {
+  return (
+    <ProductsPage
+      products={products}
+      loading={productsLoading}
+      error={productsError}
+    />
+  )
+}
 return (
     <main className="website">
 
@@ -997,8 +1139,9 @@ return (
 
         <nav className={menuOpen ? 'nav-links active' : 'nav-links'}>
           <a href="#home" onClick={() => setMenuOpen(false)}>HOME</a>
-          <a href="#collections" onClick={() => setMenuOpen(false)}>COLLECTIONS</a>
           <a href="#arrivals" onClick={() => setMenuOpen(false)}>NEW ARRIVALS</a>
+          <a href="#collections" onClick={() => setMenuOpen(false)}>COLLECTIONS</a>
+          <a href="/products" onClick={() => setMenuOpen(false)}>ALL PRODUCTS</a>
           <a href="#custom-design" onClick={() => setMenuOpen(false)}>CUSTOM DESIGN</a>
           <a href="#about" onClick={() => setMenuOpen(false)}>OUR STORY</a>
         </nav>
@@ -1085,7 +1228,7 @@ return (
 
     <div className="shop-showcase-counter">
       <span>01</span>
-      <span>â€”</span>
+      <span>ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â</span>
       <span>KENZUKA / 2026</span>
     </div>
   </div>
@@ -1103,7 +1246,7 @@ return (
             '--shirt-angle': `${(index * 360) / Math.min(products.length, 8)}deg`,
           } as CSSProperties}
          onClick={() => {
-  setSelectedProduct(product)
+  navigate(`/product/${getProductSlug(product)}`)
   setSelectedSize('')
   setSelectedImageIndex(0)
 }}
@@ -1136,30 +1279,6 @@ return (
         <div>{"\u2726"} YOUR STYLE. YOUR STORY.</div>
       </section>
 
-      <section className="collections section" id="collections">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">FIND YOUR LOOK</p>
-            <h2>EXPLORE <span>COLLECTIONS.</span></h2>
-          </div>
-          <a href="#arrivals">VIEW ALL <ArrowUpRight size={16} /></a>
-        </div>
-
-        <div className="category-grid">
-          {categories.map((category, index) => (
-            <a href="#arrivals" className="category-card" key={category.name}>
-              <img src={category.image} alt={category.name} />
-              <div className="category-number">0{index + 1}</div>
-              <div className="category-info">
-                <p>{category.subtitle}</p>
-                <h3>{category.name}</h3>
-                <span><ArrowUpRight /></span>
-              </div>
-            </a>
-          ))}
-        </div>
-      </section>
-
       <section className="arrivals section" id="arrivals">
         <div className="section-heading">
           <div>
@@ -1178,8 +1297,7 @@ return (
           <a href="#arrivals">DISCOVER MORE <ArrowUpRight size={16} /></a>
         </div>
 
-<div className="product-grid">
-  <div className="shop-controls">
+<div className="shop-controls">
   {showSearch && (
     <input
       type="text"
@@ -1189,31 +1307,6 @@ return (
       onChange={(event) => setSearchTerm(event.target.value)}
     />
   )}
-
-  <select
-    value={selectedCategory}
-    onChange={(event) => setSelectedCategory(event.target.value)}
-    aria-label="Filter by category"
-  >
-    <option value="ALL">ALL CATEGORIES</option>
-    {availableCategories.map((category) => (
-      <option key={category} value={category}>
-        {category}
-      </option>
-    ))}
-  </select>
-
-  <select
-    value={sortOrder}
-    onChange={(event) =>
-      setSortOrder(event.target.value as 'default' | 'low-high' | 'high-low')
-    }
-    aria-label="Sort products by price"
-  >
-    <option value="default">DEFAULT SORT</option>
-    <option value="low-high">PRICE: LOW TO HIGH</option>
-    <option value="high-low">PRICE: HIGH TO LOW</option>
-  </select>
 
   {showWishlistPage && (
   <button
@@ -1227,6 +1320,8 @@ return (
   </button>
 )}
 </div>
+
+<div className="product-grid">
   {productsLoading ? (
     <p>Loading KENZUKA collection...</p>
   ) : productsError ? (
@@ -1245,7 +1340,7 @@ return (
         className="product-card"
         key={product._id}
         onClick={() => {
-          setSelectedProduct(product)
+          navigate(`/product/${getProductSlug(product)}`)
           setSelectedSize('')
         }}
         style={{ cursor: 'pointer' }}
@@ -1286,6 +1381,88 @@ return (
 </div>
 
       </section>
+
+      <section className="collections section" id="collections">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">FIND YOUR LOOK</p>
+            <h2>EXPLORE <span>COLLECTIONS.</span></h2>
+          </div>
+          <a href="/products">VIEW ALL <ArrowUpRight size={16} /></a>
+        </div>
+
+        <div className="category-grid">
+<div className="collection-carousel">
+          <div className="collection-stage">
+            {categories.map((category, index) => {
+              const relativePosition =
+                (index - activeCategory + categories.length) % categories.length
+
+              const positionClass =
+                relativePosition === 0
+                  ? 'center'
+                  : relativePosition === 1
+                    ? 'right'
+                    : 'left'
+
+              return (
+                <a
+                  href={`/products?category=${encodeURIComponent(category.name)}`} 
+                  className={`collection-slide ${positionClass}`}
+                  key={category.name}
+                  onClick={() => setActiveCategory(index)}
+                  aria-label={`Explore ${category.name}`}
+                  aria-hidden={relativePosition !== 0}
+                  tabIndex={relativePosition === 0 ? 0 : -1}
+                >
+                  <img src={category.image} alt={category.name} />
+                  <div className="collection-slide-overlay">
+                    <span>0{index + 1} / 03</span>
+                    <h3>{category.name}</h3>
+                    <p>{category.subtitle}</p>
+                    <strong>EXPLORE COLLECTION <ArrowUpRight size={18} /></strong>
+                  </div>
+                </a>
+              )
+            })}
+          </div>
+
+          <div className="collection-controls">
+            <button
+              type="button"
+              aria-label="Previous collection"
+              onClick={() =>
+                setActiveCategory((current) =>
+                  (current - 1 + categories.length) % categories.length
+                )
+              }
+            >
+              <ChevronLeft />
+            </button>
+
+            <div className="collection-pagination">
+              <span>0{activeCategory + 1}</span>
+              <span className="collection-pagination-line"></span>
+              <span>03</span>
+            </div>
+
+            <button
+              type="button"
+              aria-label="Next collection"
+              onClick={() =>
+                setActiveCategory((current) =>
+                  (current + 1) % categories.length
+                )
+              }
+            >
+              <ChevronRight />
+            </button>
+          </div>
+        </div>
+      </div>
+      </section>
+
+
       {/* FULL SCREEN PRODUCT IMAGE VIEWER */}
 {isImageZoomOpen && selectedProduct && (
   <div
@@ -1314,7 +1491,7 @@ return (
           }}
           aria-label="Previous image"
         >
-          â€¹
+          ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¹
         </button>
 
         <button
@@ -1327,7 +1504,7 @@ return (
           }}
           aria-label="Next image"
         >
-          â€º
+          ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âº
         </button>
       </>
     )}
@@ -1707,7 +1884,7 @@ return (
         <div className="footer-links">
           <a href="#home">HOME</a>
           <a href="#collections">COLLECTIONS</a>
-          <a href="#arrivals">SHOP</a>
+          <a href="/products">ALL PRODUCTS</a>
           <a href="#about">ABOUT</a>
         </div>
         <div className="footer-social">
@@ -2046,7 +2223,13 @@ return (
       ? 'CHECK YOUR EMAIL.'
       : authStep === 'password'
         ? 'WELCOME BACK.'
-        : 'WELCOME TO KENZUKA.'}
+        : authStep === 'forgot-email'
+          ? 'RESET PASSWORD.'
+          : authStep === 'forgot-otp'
+            ? 'VERIFY YOUR EMAIL.'
+            : authStep === 'reset-password'
+              ? 'CREATE NEW PASSWORD.'
+              : 'WELCOME TO KENZUKA.'}
 </h2>
 
 <p className="account-description">
@@ -2056,7 +2239,13 @@ return (
       ? 'Enter the 6-digit verification code sent to your email.'
       : authStep === 'password'
         ? 'Enter your admin password to continue.'
-        : 'Enter your name to complete your account.'}
+        : authStep === 'forgot-email'
+          ? 'Enter your admin email to receive a password reset code.'
+          : authStep === 'forgot-otp'
+            ? 'Enter the 6-digit reset code sent to your email.'
+            : authStep === 'reset-password'
+              ? 'Choose a new password for your admin account.'
+              : 'Enter your name to complete your account.'}
 </p>
 
 <form
@@ -2089,7 +2278,7 @@ return (
     placeholder="Enter your email"
     value={authEmail}
     onChange={(event) => setAuthEmail(event.target.value)}
-    readOnly={authStep !== 'email'}
+    readOnly={authStep !== 'email' && authStep !== 'forgot-email'}
     required
   />
 
@@ -2112,6 +2301,50 @@ return (
     </>
   )}
 
+  {authStep === 'forgot-otp' && (
+    <>
+      <label htmlFor="recovery-otp">PASSWORD RESET CODE</label>
+      <input
+        id="recovery-otp"
+        type="text"
+        inputMode="numeric"
+        placeholder="Enter your 6-digit reset code"
+        value={recoveryOtp}
+        onChange={(event) =>
+          setRecoveryOtp(event.target.value.replace(/\D/g, '').slice(0, 6))
+        }
+        pattern="[0-9]{6}"
+        maxLength={6}
+        required
+      />
+    </>
+  )}
+
+  {authStep === 'reset-password' && (
+    <>
+      <label htmlFor="recovery-new-password">NEW PASSWORD</label>
+      <input
+        id="recovery-new-password"
+        type="password"
+        placeholder="Enter your new password"
+        value={recoveryNewPassword}
+        onChange={(event) => setRecoveryNewPassword(event.target.value)}
+        minLength={8}
+        required
+      />
+
+      <label htmlFor="recovery-confirm-password">CONFIRM NEW PASSWORD</label>
+      <input
+        id="recovery-confirm-password"
+        type="password"
+        placeholder="Confirm your new password"
+        value={recoveryConfirmPassword}
+        onChange={(event) => setRecoveryConfirmPassword(event.target.value)}
+        minLength={8}
+        required
+      />
+    </>
+  )}
   {authStep === 'password' && (
     <>
       <label htmlFor="auth-password">ADMIN PASSWORD</label>
@@ -2123,11 +2356,27 @@ return (
         onChange={(event) => setAuthPassword(event.target.value)}
         required
       />
+
+      <button
+        type="button"
+        className="account-forgot-link"
+        onClick={() => {
+          setAuthStep('forgot-email')
+          setAuthError('')
+          setAuthSuccess('')
+        }}
+      >
+        FORGOT PASSWORD?
+      </button>
     </>
   )}
 
   {authError && (
     <p className="account-error">{authError}</p>
+  )}
+
+  {authSuccess && (
+    <p className="account-success">{authSuccess}</p>
   )}
 
   <button
@@ -2143,11 +2392,20 @@ return (
           ? 'VERIFY OTP'
           : authStep === 'password'
             ? 'SIGN IN'
-            : 'CREATE ACCOUNT'}
+            : authStep === 'forgot-email'
+              ? 'SEND RESET CODE'
+              : authStep === 'forgot-otp'
+                ? 'VERIFY RESET CODE'
+                : authStep === 'reset-password'
+                  ? 'UPDATE PASSWORD'
+                  : 'CREATE ACCOUNT'}
   </button>
 </form>
 
-{authStep !== 'email' && (
+{authStep !== 'email' &&
+ authStep !== 'forgot-email' &&
+ authStep !== 'forgot-otp' &&
+ authStep !== 'reset-password' && (
   <p className="account-switch">
     Wrong email or want to start again?
 
@@ -2166,6 +2424,26 @@ return (
     </button>
   </p>
 )}
+{(authStep === 'forgot-email' ||
+  authStep === 'forgot-otp' ||
+  authStep === 'reset-password') && (
+  <p className="account-switch">
+    <button
+      type="button"
+      onClick={() => {
+        setAuthStep('password')
+        setRecoveryOtp('')
+        setRecoveryToken('')
+        setRecoveryNewPassword('')
+        setRecoveryConfirmPassword('')
+        setAuthError('')
+        setAuthSuccess('')
+      }}
+    >
+      BACK TO SIGN IN
+    </button>
+  </p>
+)}
             </>
           )}
           </div>
@@ -2176,3 +2454,16 @@ return (
 }
 
 export default App
+
+
+
+
+
+
+
+
+
+
+
+
+

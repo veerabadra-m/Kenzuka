@@ -220,3 +220,58 @@ export const getStoredUser = (): AuthUser | null => {
     return null
   }
 }
+
+// =====================================
+// ADMIN PASSWORD RECOVERY
+// =====================================
+
+export interface AdminResetOtpResponse {
+  success: boolean
+  message: string
+}
+
+export interface AdminResetVerifyResponse {
+  success: boolean
+  message: string
+  resetToken: string
+}
+
+// Step 1: Request admin recovery OTP
+export const requestAdminPasswordReset = async (
+  email: string
+): Promise<AdminResetOtpResponse> => {
+  const response = await api.post<AdminResetOtpResponse>(
+    '/auth/admin/forgot-password',
+    { email }
+  )
+
+  return response.data
+}
+
+// Step 2: Verify admin recovery OTP
+export const verifyAdminPasswordResetOtp = async (
+  credentials: { email: string; otp: string }
+): Promise<AdminResetVerifyResponse> => {
+  const response = await api.post<AdminResetVerifyResponse>(
+    '/auth/admin/verify-reset-otp',
+    credentials
+  )
+
+  return response.data
+}
+
+// Step 3: Set a new admin password
+export const resetAdminPassword = async (
+  credentials: {
+    email: string
+    resetToken: string
+    newPassword: string
+  }
+): Promise<{ success: boolean; message: string }> => {
+  const response = await api.post<{ success: boolean; message: string }>(
+    '/auth/admin/reset-password',
+    credentials
+  )
+
+  return response.data
+}

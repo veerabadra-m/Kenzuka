@@ -1,4 +1,3 @@
-
 import express from 'express'
 
 import {
@@ -16,6 +15,12 @@ import {
 } from '../controllers/emailOtpController.js'
 
 import {
+  requestAdminPasswordReset,
+  verifyAdminPasswordResetOtp,
+  resetAdminPassword,
+} from '../controllers/adminPasswordResetController.js'
+
+import {
   protect,
   customerOnly,
 } from '../middleware/authMiddleware.js'
@@ -29,6 +34,11 @@ router.post('/complete-registration', completeCustomerRegistration)
 
 // Admin password login
 router.post('/login', loginUser)
+
+// Admin forgot password and recovery
+router.post('/admin/forgot-password', requestAdminPasswordReset)
+router.post('/admin/verify-reset-otp', verifyAdminPasswordResetOtp)
+router.post('/admin/reset-password', resetAdminPassword)
 
 // Customer account features
 router.get('/me', protect, customerOnly, getMyProfile)

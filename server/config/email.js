@@ -199,3 +199,29 @@ export const sendOrderStatusEmail = async (to, order) =>
     message: `Your KENZUKA order status has been updated to ${order.orderStatus}.`,
     order,
   })
+
+// Admin: password recovery OTP.
+export const sendAdminPasswordResetEmail = async (to, otp) => {
+  const transporter = getTransporter()
+  const emailUser = process.env.EMAIL_USER
+
+  return transporter.sendMail({
+    from: `"KENZUKA" <${emailUser}>`,
+    to,
+    subject: 'KENZUKA Admin Password Reset Code',
+    text: `Your KENZUKA admin password reset code is ${otp}. It expires in 10 minutes. If you did not request this, please ignore this email.`,
+    html: `
+      <div style="background:#080908;padding:30px 12px;font-family:Arial,sans-serif;color:#fff">
+        <div style="max-width:500px;margin:auto;background:#111;padding:28px;border:1px solid #333;text-align:center">
+          <h1 style="color:#f4ae21;letter-spacing:5px">KENZUKA</h1>
+          <p style="color:#999;letter-spacing:2px">ADMIN PASSWORD RECOVERY</p>
+          <hr style="border:0;border-top:1px solid #333;margin:24px 0" />
+          <p style="color:#ddd">Use this verification code to reset your admin password:</p>
+          <h1 style="color:#f4ae21;letter-spacing:10px">${escapeHtml(otp)}</h1>
+          <p style="color:#ddd">This code expires in 10 minutes.</p>
+          <p style="color:#999;font-size:12px">Never share this code with anyone. If you did not request a password reset, ignore this email.</p>
+        </div>
+      </div>
+    `,
+  })
+}
