@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+﻿import { useEffect, useState, type FormEvent } from 'react'
 import { loginUser, logoutUser, getStoredUser, requestAdminPasswordReset, verifyAdminPasswordResetOtp, resetAdminPassword, type AuthUser } from '../services/authService'
 import { getProducts, type ApiProduct } from '../services/api'
 import api from '../services/api'
@@ -588,7 +588,7 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
               {product.images[0] && <img src={product.images[0]} alt={product.name} />}
               <div className="admin-product-info">
                 <strong>{product.name}</strong>
-                <span>{product.category} Â· ?{product.price} Â· Stock: {product.stock}</span>
+                <span>{product.category} | ₹{product.price} | Stock: {product.stock}</span>
                 {product.isFeatured && <small>FEATURED</small>}
               </div>
               <button onClick={() => startEdit(product)}>EDIT</button>
@@ -622,11 +622,11 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
 
                 <div className="admin-order-items">
                   {order.orderItems.map((item, index) => (
-                    <p key={`${order._id}-${index}`}>{item.name} Â· Size {item.size} Â· Qty {item.quantity} Â· ?{item.price}</p>
+                    <p key={`${order._id}-${index}`}>{item.name} | Size {item.size} | Qty {item.quantity} | ₹{item.price}</p>
                   ))}
                 </div>
 
-                <p><strong>Payment:</strong> {order.paymentMethod} Â· {order.paymentStatus}</p>
+                <p><strong>Payment:</strong> {order.paymentMethod} | {order.paymentStatus}</p>
                 <p><strong>Total:</strong> ?{order.totalPrice}</p>
                 <p><strong>Placed:</strong> {new Date(order.createdAt).toLocaleString('en-IN')}</p>
 
