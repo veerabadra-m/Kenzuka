@@ -1,0 +1,394 @@
+﻿.product-detail-page {
+  min-height: 100vh;
+  background: #080908;
+  color: #f5f5f0;
+  font-family: inherit;
+}
+
+.detail-header {
+  min-height: 76px;
+  padding: 0 6%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+}
+
+.detail-back,
+.detail-logo,
+.detail-breadcrumb button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.detail-back {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  justify-self: start;
+  font-size: 11px;
+  letter-spacing: 1.3px;
+}
+
+.detail-logo {
+  justify-self: center;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.detail-logo span {
+  color: #f4ae21;
+}
+
+.detail-header-label {
+  justify-self: end;
+  color: #999;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+.detail-breadcrumb {
+  padding: 25px 6%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px;
+  color: #888;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.detail-breadcrumb button {
+  padding: 0;
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+
+.detail-breadcrumb button:hover {
+  color: #f4ae21;
+}
+
+.detail-layout {
+  width: 88%;
+  max-width: 1440px;
+  margin: 10px auto 90px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr);
+  gap: clamp(35px, 6vw, 100px);
+  align-items: start;
+}
+
+.detail-gallery {
+  min-width: 0;
+}
+
+.detail-main-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: #151615;
+}
+
+.detail-main-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.detail-image-count {
+  position: absolute;
+  right: 17px;
+  bottom: 17px;
+  padding: 8px 11px;
+  background: rgba(0,0,0,.65);
+  color: white;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.detail-thumbnails {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.detail-thumbnails button {
+  flex: 0 0 78px;
+  height: 94px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background: #171817;
+  cursor: pointer;
+  opacity: .62;
+}
+
+.detail-thumbnails button.active {
+  border-color: #f4ae21;
+  opacity: 1;
+}
+
+.detail-thumbnails img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.detail-information {
+  position: sticky;
+  top: 35px;
+  padding-top: 8px;
+}
+
+.detail-eyebrow {
+  color: #f4ae21;
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin: 0 0 20px;
+}
+
+.detail-information h1 {
+  margin: 0;
+  font-size: clamp(30px, 3.6vw, 52px);
+  line-height: 1.06;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  text-transform: uppercase;
+}
+
+.detail-price {
+  margin: 20px 0 25px;
+  font-size: 23px;
+  font-weight: 600;
+}
+
+.detail-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255,255,255,.15);
+  margin: 23px 0;
+}
+
+.detail-description {
+  color: #b5b5b0;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.detail-stock {
+  margin-top: 22px;
+  color: #bdbdb7;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+
+.detail-size-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 15px;
+  font-size: 11px;
+  letter-spacing: 1.3px;
+}
+
+.detail-size-heading span:last-child {
+  color: #f4ae21;
+}
+
+.detail-size-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.detail-size-options button {
+  min-width: 52px;
+  height: 47px;
+  padding: 0 13px;
+  border: 1px solid #555;
+  background: transparent;
+  color: #f5f5f0;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.detail-size-options button:hover,
+.detail-size-options button.selected {
+  border-color: #f4ae21;
+  background: #f4ae21;
+  color: #080908;
+}
+
+.detail-size-unavailable {
+  color: #aaa;
+  font-size: 12px;
+}
+
+.detail-add-button,
+.detail-buy-button {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 23px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #f4ae21;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  transition: .2s ease;
+}
+
+.detail-add-button {
+  background: #f4ae21;
+  color: #080908;
+}
+
+.detail-buy-button {
+  margin-top: 10px;
+  background: transparent;
+  color: #f5f5f0;
+}
+
+.detail-add-button:hover:not(:disabled) {
+  background: #ffc34a;
+}
+
+.detail-buy-button:hover:not(:disabled) {
+  background: #f4ae21;
+  color: #080908;
+}
+
+.detail-add-button:disabled,
+.detail-buy-button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.detail-added-message {
+  color: #f4ae21;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.detail-bottom-note {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 45px;
+  padding-top: 17px;
+  border-top: 1px solid rgba(255,255,255,.15);
+  color: #888;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+
+.detail-bottom-note span:first-child {
+  color: #f4ae21;
+  font-weight: 800;
+}
+
+.detail-footer {
+  padding: 25px 6%;
+  border-top: 1px solid rgba(255,255,255,.12);
+  display: flex;
+  justify-content: space-between;
+  color: #f4ae21;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.detail-footer span {
+  color: #888;
+  font-size: 9px;
+}
+
+.product-detail-message {
+  min-height: 100vh;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: #080908;
+  color: #f5f5f0;
+  text-align: center;
+}
+
+.product-detail-message button {
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #f4ae21;
+  background: transparent;
+  color: #f4ae21;
+  cursor: pointer;
+}
+
+@media (max-width: 850px) {
+  .detail-layout {
+    width: 90%;
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .detail-information {
+    position: static;
+  }
+
+  .detail-main-image {
+    aspect-ratio: 4 / 4.5;
+  }
+}
+
+@media (max-width: 520px) {
+  .detail-header {
+    min-height: 65px;
+    padding: 0 5%;
+    grid-template-columns: 1fr auto;
+  }
+
+  .detail-back {
+    font-size: 9px;
+  }
+
+  .detail-logo {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 21px;
+  }
+
+  .detail-header-label {
+    display: none;
+  }
+
+  .detail-breadcrumb {
+    padding: 20px 5%;
+    font-size: 9px;
+  }
+
+  .detail-layout {
+    width: 90%;
+    margin-top: 0;
+  }
+
+  .detail-information h1 {
+    font-size: 34px;
+  }
+
+  .detail-footer {
+    padding: 22px 5%;
+  }
+}

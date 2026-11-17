@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+﻿import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
@@ -65,15 +65,12 @@ function Kenzuka3DScene() {
     logoTexture.generateMipmaps = true
     logoTexture.minFilter = THREE.LinearMipmapLinearFilter
     logoTexture.magFilter = THREE.LinearFilter
-    logoTexture.needsUpdate = true
 
     const half = 1.7
     const size = half * 2
 
-    const logoMaterial = new THREE.MeshStandardMaterial({
+    const logoMaterial = new THREE.MeshBasicMaterial({
       map: logoTexture,
-      roughness: 0.78,
-      metalness: 0.05,
       side: THREE.DoubleSide,
     })
 
@@ -220,11 +217,8 @@ function Kenzuka3DScene() {
               Object.values(material).forEach((value) => {
                 if (value instanceof THREE.Texture) {
                   value.anisotropy = maxAnisotropy
-                  value.needsUpdate = true
                 }
               })
-
-              material.needsUpdate = true
             })
           }
         })
@@ -248,8 +242,23 @@ function Kenzuka3DScene() {
       camera.top = viewSize / 2
       camera.bottom = -viewSize / 2
 
-      camera.updateProjectionMatrix()
-      renderer.setSize(width, height, false)
+     camera.updateProjectionMatrix()
+
+renderer.setPixelRatio(
+  Math.min(window.devicePixelRatio || 1, 2.5)
+)
+
+renderer.setSize(width, height, false)
+   console.log('KENZUKA RESIZE DETAILS:', JSON.stringify({
+  mountWidth: mount.clientWidth,
+  mountHeight: mount.clientHeight,
+  resizeWidth: width,
+  resizeHeight: height,
+  rendererPixelRatio: renderer.getPixelRatio(),
+  canvasWidth: renderer.domElement.width,
+  canvasHeight: renderer.domElement.height,
+  canvasStyleWidth: renderer.domElement.clientWidth,
+}))
     }
 
     const resizeObserver = new ResizeObserver(resize)
@@ -359,3 +368,5 @@ function Kenzuka3DScene() {
 }
 
 export default Kenzuka3DScene
+
+

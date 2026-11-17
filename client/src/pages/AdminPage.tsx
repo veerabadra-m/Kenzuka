@@ -1,5 +1,5 @@
-﻿import { useEffect, useState, type FormEvent } from 'react'
-import { loginUser, logoutUser, getStoredUser, type AuthUser } from '../services/authService'
+import { useEffect, useState, type FormEvent } from 'react'
+import { loginUser, logoutUser, getStoredUser, requestAdminPasswordReset, verifyAdminPasswordResetOtp, resetAdminPassword, type AuthUser } from '../services/authService'
 import { getProducts, type ApiProduct } from '../services/api'
 import api from '../services/api'
 import './AdminPage.css'
@@ -57,7 +57,7 @@ const nextStatuses: Record<string, string[]> = {
   Cancelled: [],
 }
 
-function AdminPage() {
+function AdminPage({ onLogout }: { onLogout: () => void }) {
   const [admin, setAdmin] = useState<AuthUser | null>(() => {
     const user = getStoredUser()
     return user?.role === 'admin' ? user : null
@@ -71,6 +71,15 @@ function AdminPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loginLoading, setLoginLoading] = useState(false)
+
+  const [resetStep, setResetStep] = useState<'login' | 'email' | 'otp' | 'password'>('login')
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetOtp, setResetOtp] = useState('')
+  const [resetToken, setResetToken] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetMessage, setResetMessage] = useState('')
 
   const [products, setProducts] = useState<ApiProduct[]>([])
   const [orders, setOrders] = useState<AdminOrder[]>([])
@@ -137,7 +146,97 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
       setLoginLoading(false)
     }
   }
+  async function handleRequestReset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setResetLoading(true)
+    setError('')
+    setResetMessage('')
+
+    try {
+      const response = await requestAdminPasswordReset(resetEmail.trim())
+      setResetStep('otp')
+      setResetMessage(response.message)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Could not request a recovery code.')
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  async function handleVerifyResetOtp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setResetLoading(true)
+    setError('')
+    setResetMessage('')
+
+    try {
+      const response = await verifyAdminPasswordResetOtp({
+        email: resetEmail.trim(),
+        otp: resetOtp.trim(),
+      })
+
+      setResetToken(response.resetToken)
+      setResetStep('password')
+      setResetMessage(response.message)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Could not verify the recovery code.')
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  async function handleResetPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError('')
+    setResetMessage('')
+
+    if (newPassword.length < 8) {
+      setError('Password must contain at least 8 characters.')
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    setResetLoading(true)
+
+    try {
+      const response = await resetAdminPassword({
+        email: resetEmail.trim(),
+        resetToken,
+        newPassword,
+      })
+
+      setResetStep('login')
+      setEmail(resetEmail.trim())
+      setPassword('')
+      setResetOtp('')
+      setResetToken('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setResetEmail('')
+      setResetMessage(response.message)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Could not reset the password.')
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  function returnToAdminLogin() {
+    setResetStep('login')
+    setResetEmail('')
+    setResetOtp('')
+    setResetToken('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setResetMessage('')
+    setError('')
+  }
   function handleLogout() {
+    onLogout()
     logoutUser()
     setAdmin(null)
     setProducts([])
@@ -245,41 +344,174 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
   if (!admin) {
     return (
       <main className="admin-login-page">
-        <form className="admin-login-card" onSubmit={handleLogin}>
+        <div className="admin-login-card">
           <span className="admin-eyebrow">KENZUKA CONTROL PANEL</span>
-          <h1>ADMIN LOGIN</h1>
-          <p>Sign in with your administrator account.</p>
 
-          {error && <div className="admin-alert error">{error}</div>}
+          {resetStep === 'login' && (
+            <>
+              <h1>ADMIN LOGIN</h1>
+              <p>Sign in with your administrator account.</p>
 
-          <label>Email address</label>
-          <input
-            type="email"
-            value={email}
-            onChange={event => setEmail(event.target.value)}
-            placeholder="Admin email"
-            required
-          />
+              {error && <div className="admin-alert error">{error}</div>}
+              {resetMessage && <div className="admin-alert success">{resetMessage}</div>}
 
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={event => setPassword(event.target.value)}
-            placeholder="Admin password"
-            required
-          />
+              <form onSubmit={handleLogin}>
+                <label>Email address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={event => setEmail(event.target.value)}
+                  placeholder="Admin email"
+                  required
+                />
 
-          <button className="admin-primary-button" disabled={loginLoading}>
-            {loginLoading ? 'SIGNING IN...' : 'SIGN IN'}
-          </button>
+                <label>Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={event => setPassword(event.target.value)}
+                  placeholder="Admin password"
+                  required
+                />
 
-          <a className="admin-back-link" href="/">← Back to KENZUKA store</a>
-        </form>
+                <button
+                  type="button"
+                  className="admin-forgot-link"
+                  onClick={() => {
+                    setResetEmail(email)
+                    setError('')
+                    setResetMessage('')
+                    setResetStep('email')
+                  }}
+                >
+                  Forgot Password?
+                </button>
+
+                <button className="admin-primary-button" disabled={loginLoading}>
+                  {loginLoading ? 'SIGNING IN...' : 'SIGN IN'}
+                </button>
+              </form>
+
+              <a className="admin-back-link" href="/">? Back to KENZUKA store</a>
+            </>
+          )}
+
+          {resetStep === 'email' && (
+            <>
+              <h1>FORGOT PASSWORD</h1>
+              <p>Enter your registered administrator email to receive a recovery code.</p>
+
+              {error && <div className="admin-alert error">{error}</div>}
+              {resetMessage && <div className="admin-alert success">{resetMessage}</div>}
+
+              <form onSubmit={handleRequestReset}>
+                <label>Admin email address</label>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={event => setResetEmail(event.target.value)}
+                  placeholder="Enter admin email"
+                  required
+                />
+
+                <button className="admin-primary-button" disabled={resetLoading}>
+                  {resetLoading ? 'SENDING CODE...' : 'SEND RECOVERY CODE'}
+                </button>
+              </form>
+
+              <button type="button" className="admin-back-link admin-text-button" onClick={returnToAdminLogin}>
+                ? Back to login
+              </button>
+            </>
+          )}
+
+          {resetStep === 'otp' && (
+            <>
+              <h1>VERIFY CODE</h1>
+              <p>Enter the six-digit recovery code sent to your registered email.</p>
+
+              {error && <div className="admin-alert error">{error}</div>}
+              {resetMessage && <div className="admin-alert success">{resetMessage}</div>}
+
+              <form onSubmit={handleVerifyResetOtp}>
+                <label>Six-digit verification code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  value={resetOtp}
+                  onChange={event => setResetOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="Enter OTP"
+                  required
+                />
+
+                <button className="admin-primary-button" disabled={resetLoading}>
+                  {resetLoading ? 'VERIFYING...' : 'VERIFY CODE'}
+                </button>
+              </form>
+
+              <button
+                type="button"
+                className="admin-back-link admin-text-button"
+                onClick={() => {
+                  setResetStep('email')
+                  setResetOtp('')
+                  setError('')
+                  setResetMessage('')
+                }}
+              >
+                ? Change email
+              </button>
+            </>
+          )}
+
+          {resetStep === 'password' && (
+            <>
+              <h1>NEW PASSWORD</h1>
+              <p>Create a new password for your KENZUKA administrator account.</p>
+
+              {error && <div className="admin-alert error">{error}</div>}
+              {resetMessage && <div className="admin-alert success">{resetMessage}</div>}
+
+              <form onSubmit={handleResetPassword}>
+                <label>New password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={event => setNewPassword(event.target.value)}
+                  placeholder="Minimum 8 characters"
+                  minLength={8}
+                  maxLength={72}
+                  required
+                />
+
+                <label>Confirm new password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={event => setConfirmPassword(event.target.value)}
+                  placeholder="Re-enter new password"
+                  minLength={8}
+                  maxLength={72}
+                  required
+                />
+
+                <button className="admin-primary-button" disabled={resetLoading}>
+                  {resetLoading ? 'UPDATING PASSWORD...' : 'RESET PASSWORD'}
+                </button>
+              </form>
+
+              <button type="button" className="admin-back-link admin-text-button" onClick={returnToAdminLogin}>
+                ? Back to login
+              </button>
+            </>
+          )}
+        </div>
       </main>
     )
   }
-
   return (
     <main className="admin-page">
       <header className="admin-header">
@@ -315,13 +547,13 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
 
           <div className="admin-section-heading">
             <h2>Recent orders</h2>
-            <button onClick={() => setActiveTab('orders')}>View all →</button>
+            <button onClick={() => setActiveTab('orders')}>View all ?</button>
           </div>
 
           {orders.length === 0 ? <p>No orders yet.</p> : orders.slice(0, 5).map(order => (
             <div className="admin-order-row" key={order._id}>
               <div><strong>#{order._id.slice(-8).toUpperCase()}</strong><span>{order.shippingAddress?.fullName}</span></div>
-              <strong>₹{order.totalPrice}</strong>
+              <strong>?{order.totalPrice}</strong>
               <span className="admin-status">{order.orderStatus}</span>
             </div>
           ))}
@@ -337,7 +569,7 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
             <label>Category<input value={form.category} onChange={e => setForm({...form, category: e.target.value})} required /></label>
             <label>Description<textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} required /></label>
             <div className="admin-form-grid">
-              <label>Price (₹)<input type="number" min="0" step="0.01" value={form.price} onChange={e => setForm({...form, price: e.target.value})} required /></label>
+              <label>Price (?)<input type="number" min="0" step="0.01" value={form.price} onChange={e => setForm({...form, price: e.target.value})} required /></label>
               <label>Stock<input type="number" min="0" step="1" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} required /></label>
             </div>
             <label>Image URLs (one per line)<textarea value={form.images} onChange={e => setForm({...form, images: e.target.value})} placeholder="https://example.com/product.jpg" /></label>
@@ -356,7 +588,7 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
               {product.images[0] && <img src={product.images[0]} alt={product.name} />}
               <div className="admin-product-info">
                 <strong>{product.name}</strong>
-                <span>{product.category} · ₹{product.price} · Stock: {product.stock}</span>
+                <span>{product.category} Â· ?{product.price} Â· Stock: {product.stock}</span>
                 {product.isFeatured && <small>FEATURED</small>}
               </div>
               <button onClick={() => startEdit(product)}>EDIT</button>
@@ -390,12 +622,12 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
 
                 <div className="admin-order-items">
                   {order.orderItems.map((item, index) => (
-                    <p key={`${order._id}-${index}`}>{item.name} · Size {item.size} · Qty {item.quantity} · ₹{item.price}</p>
+                    <p key={`${order._id}-${index}`}>{item.name} Â· Size {item.size} Â· Qty {item.quantity} Â· ?{item.price}</p>
                   ))}
                 </div>
 
-                <p><strong>Payment:</strong> {order.paymentMethod} · {order.paymentStatus}</p>
-                <p><strong>Total:</strong> ₹{order.totalPrice}</p>
+                <p><strong>Payment:</strong> {order.paymentMethod} Â· {order.paymentStatus}</p>
+                <p><strong>Total:</strong> ?{order.totalPrice}</p>
                 <p><strong>Placed:</strong> {new Date(order.createdAt).toLocaleString('en-IN')}</p>
 
                 {statuses.length > 0 && (
@@ -417,3 +649,6 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
 }
 
 export default AdminPage
+
+
+

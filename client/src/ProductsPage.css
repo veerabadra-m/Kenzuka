@@ -1,0 +1,444 @@
+﻿/* KENZUKA PRODUCT CATALOGUE */
+
+.catalogue-page {
+  min-height: 100vh;
+  background: #080908;
+  color: #f5f5f0;
+  font-family: 'Manrope', sans-serif;
+}
+
+.catalogue-header {
+  min-height: 76px;
+  padding: 0 6%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  border-bottom: 1px solid #292a27;
+}
+
+.catalogue-header button {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+.catalogue-back {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  justify-self: start;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+
+.catalogue-logo {
+  justify-self: center;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: -1.5px;
+}
+
+.catalogue-logo span,
+.catalogue-intro h1 span {
+  color: #f4ae21;
+}
+
+.catalogue-header-label {
+  justify-self: end;
+  color: #aaa;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+.catalogue-intro {
+  padding: 75px 6% 45px;
+  border-bottom: 1px solid #292a27;
+}
+
+.catalogue-intro .eyebrow {
+  color: #f4ae21;
+  font-size: 10px;
+  letter-spacing: 3px;
+}
+
+.catalogue-intro h1 {
+  margin: 15px 0 10px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(54px, 8vw, 100px);
+  line-height: .95;
+  font-weight: 900;
+  letter-spacing: -2px;
+}
+
+.catalogue-intro > p:not(.eyebrow) {
+  color: #aaa;
+  font-size: 13px;
+}
+
+.catalogue-count {
+  margin-top: 28px;
+  color: #f4ae21;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+.catalogue-content {
+  padding: 35px 6% 75px;
+}
+
+.catalogue-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin-bottom: 30px;
+}
+
+.catalogue-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.catalogue-categories button {
+  padding: 11px 15px;
+  background: transparent;
+  border: 1px solid #343530;
+  color: #aaa;
+  font-size: 9px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: .2s ease;
+}
+
+.catalogue-categories button:hover,
+.catalogue-categories button.active {
+  background: #f4ae21;
+  border-color: #f4ae21;
+  color: #080908;
+}
+
+.catalogue-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.catalogue-search {
+  min-height: 39px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #343530;
+  color: #aaa;
+}
+
+.catalogue-search input {
+  width: 145px;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: #fff;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+.catalogue-search input::placeholder {
+  color: #777;
+}
+
+.catalogue-tools select {
+  min-height: 39px;
+  padding: 0 10px;
+  background: #111210;
+  border: 1px solid #343530;
+  color: #eee;
+  font-size: 9px;
+  letter-spacing: .7px;
+  outline: none;
+}
+
+.catalogue-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 35px 20px;
+}
+
+.catalogue-card {
+  min-width: 0;
+  cursor: pointer;
+}
+
+.catalogue-card-image {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  background: #171815;
+}
+
+.catalogue-card-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform .5s ease;
+}
+
+.catalogue-card:hover .catalogue-card-image img {
+  transform: scale(1.045);
+}
+
+.catalogue-card-image > span {
+  position: absolute;
+  top: 13px;
+  left: 13px;
+  padding: 7px 9px;
+  background: #080908;
+  color: #f4ae21;
+  font-size: 8px;
+  letter-spacing: 1.2px;
+}
+
+.catalogue-card-arrow {
+  position: absolute;
+  right: 13px;
+  bottom: 13px;
+  width: 37px;
+  height: 37px;
+  display: grid;
+  place-items: center;
+  background: #f4ae21;
+  color: #080908;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: .25s ease;
+}
+
+.catalogue-card:hover .catalogue-card-arrow {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.catalogue-card-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-top: 15px;
+}
+
+.catalogue-card-info p {
+  margin: 0 0 7px;
+  color: #999;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+}
+
+.catalogue-card-info h2 {
+  margin: 0;
+  color: #f5f5f0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.catalogue-card-info strong {
+  flex-shrink: 0;
+  color: #f4ae21;
+  font-size: 13px;
+}
+
+.catalogue-message {
+  padding: 70px 15px;
+  color: #aaa;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.catalogue-footer {
+  padding: 25px 6%;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #292a27;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.catalogue-footer span {
+  color: #999;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 2px;
+}
+
+@media (max-width: 850px) {
+  .catalogue-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 14px;
+  }
+
+  .catalogue-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .catalogue-tools {
+    width: 100%;
+  }
+
+  .catalogue-search {
+    flex: 1;
+  }
+
+  .catalogue-search input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .catalogue-header {
+    min-height: 65px;
+    padding: 0 4%;
+  }
+
+  .catalogue-back {
+    font-size: 8px;
+    gap: 4px;
+  }
+
+  .catalogue-logo {
+    font-size: 21px;
+  }
+
+  .catalogue-header-label {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+
+  .catalogue-intro {
+    padding: 55px 5% 35px;
+  }
+
+  .catalogue-content {
+    padding: 25px 4% 55px;
+  }
+
+  .catalogue-categories {
+    gap: 6px;
+  }
+
+  .catalogue-categories button {
+    padding: 9px 10px;
+    font-size: 8px;
+  }
+
+  .catalogue-card-info {
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .catalogue-card-info h2 {
+    font-size: 11px;
+  }
+
+  .catalogue-card-info strong {
+    font-size: 12px;
+  }
+
+  .catalogue-footer {
+    padding: 20px 5%;
+  }
+}
+
+/* =====================================
+   KENZUKA PRODUCT PAGINATION
+   ===================================== */
+
+.catalogue-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  margin: 55px auto 0;
+  flex-wrap: wrap;
+}
+
+.pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.pagination-numbers button,
+.pagination-arrow {
+  min-width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: transparent;
+  border: 1px solid #343530;
+  color: #eee;
+  font-size: 11px;
+  cursor: pointer;
+  transition: .2s ease;
+}
+
+.pagination-numbers button:hover,
+.pagination-numbers button.active {
+  background: #f4ae21;
+  border-color: #f4ae21;
+  color: #080908;
+}
+
+.pagination-arrow {
+  padding: 0 13px;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+.pagination-arrow:hover:not(:disabled) {
+  border-color: #f4ae21;
+  color: #f4ae21;
+}
+
+.pagination-arrow:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.catalogue-page-count {
+  margin-top: 18px;
+  color: #888;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+
+@media (max-width: 520px) {
+  .catalogue-pagination {
+    gap: 10px;
+  }
+
+  .pagination-numbers {
+    gap: 5px;
+  }
+
+  .pagination-numbers button {
+    min-width: 34px;
+    height: 36px;
+  }
+
+  .pagination-arrow {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 7px;
+    font-size: 8px;
+  }
+}
+

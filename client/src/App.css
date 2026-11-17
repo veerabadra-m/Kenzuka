@@ -1,4 +1,4 @@
-﻿
+
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap');
 
 :root {
@@ -3619,4 +3619,1750 @@ img {
   font-size: 12px;
   line-height: 1.5;
   margin-top: 8px;
+}
+
+/* ==========================================
+   KENZUKA - SEVEN CARD FAN DISPLAY
+========================================== */
+
+.shop-fan-stage {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: 0;
+  width: 66%;
+  height: 100%;
+  transform: translateY(-50%);
+  perspective: 1400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+
+.shop-fan-glow {
+  position: absolute;
+  width: 65%;
+  height: 55%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(201,20,36,.2), transparent 70%);
+  filter: blur(35px);
+  pointer-events: none;
+}
+
+.shop-fan-card {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  width: clamp(145px, 16vw, 215px);
+  height: clamp(260px, 31vw, 350px);
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 13px;
+  background: linear-gradient(155deg,#242424,#101010 75%);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transform:
+    translate(-50%,-50%)
+    translateX(calc((var(--fan-index) - 3) * 49px))
+    rotate(calc((var(--fan-index) - 3) * 9deg));
+  transform-origin: 50% 90%;
+  z-index: calc(10 + var(--fan-index));
+  box-shadow: 0 22px 55px rgba(0,0,0,.48);
+  transition: transform 450ms cubic-bezier(.2,.8,.2,1),
+    box-shadow 450ms ease, border-color 300ms ease;
+  will-change: transform;
+}
+
+.shop-fan-card:hover,
+.shop-fan-card:focus-visible {
+  z-index: 30;
+  transform:
+    translate(-50%,-50%)
+    translateX(calc((var(--fan-index) - 3) * 49px))
+    translateY(-28px) rotate(0deg) scale(1.09);
+  border-color: rgba(201,20,36,.8);
+  box-shadow: 0 30px 75px rgba(0,0,0,.7);
+  outline: none;
+}
+
+.shop-fan-card-image {
+  position: relative;
+  width: 100%;
+  height: 77%;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #1b1b1b;
+}
+
+.shop-fan-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 500ms ease;
+  user-select: none;
+}
+
+.shop-fan-card:hover .shop-fan-card-image img {
+  transform: scale(1.07);
+}
+
+.shop-fan-card-tag {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  padding: 5px 7px;
+  border-radius: 3px;
+  background: #c91424;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.shop-fan-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 4px 3px;
+}
+
+.shop-fan-card-name {
+  overflow: hidden;
+  color: #eee;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-fan-card-price {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.shop-fan-caption {
+  position: absolute;
+  right: 8%;
+  bottom: 8%;
+  color: rgba(255,255,255,.48);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  pointer-events: none;
+}
+
+.shop-fan-empty {
+  color: #aaa;
+  font-size: 12px;
+  letter-spacing: 3px;
+}
+
+@media (max-width: 768px) {
+  .shop-fan-stage {
+    top: auto;
+    right: -7%;
+    bottom: 15px;
+    width: 110%;
+    height: 390px;
+    transform: none;
+    perspective: 950px;
+  }
+
+  .shop-fan-card {
+    width: clamp(112px, 28vw, 145px);
+    height: 235px;
+    padding: 7px;
+    transform:
+      translate(-50%,-50%)
+      translateX(calc((var(--fan-index) - 3) * 31px))
+      rotate(calc((var(--fan-index) - 3) * 8deg));
+  }
+
+  .shop-fan-card:hover,
+  .shop-fan-card:focus-visible {
+    transform:
+      translate(-50%,-50%)
+      translateX(calc((var(--fan-index) - 3) * 31px))
+      translateY(-18px) rotate(0deg) scale(1.06);
+  }
+
+  .shop-fan-card-image { height: 75%; }
+  .shop-fan-card-name { font-size: 9px; }
+  .shop-fan-card-price { font-size: 12px; }
+  .shop-fan-card-tag { font-size: 7px; }
+
+  .shop-fan-caption {
+    bottom: 1%;
+    right: 12%;
+    font-size: 7px;
+    letter-spacing: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-fan-card,
+  .shop-fan-card-image img {
+    transition: none;
+  }
+}
+
+/* ==========================================
+   KENZUKA - FULL SCREEN SEVEN PRODUCT FAN
+========================================== */
+
+.shop-showcase {
+  height: calc(100svh - 128px);
+  min-height: 620px;
+  max-height: 1000px;
+  padding: 0;
+  overflow: hidden;
+  display: block;
+}
+
+.shop-showcase-content,
+.shop-showcase-bottom {
+  display: none !important;
+}
+
+.shop-fullscreen-fan {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  perspective: 1800px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shop-fullscreen-fan .shop-fan-card {
+  width: clamp(180px, 19vw, 310px);
+  height: clamp(300px, 54vh, 470px);
+  top: 48%;
+  left: 50%;
+  transform:
+    translate(-50%, -50%)
+    translateX(calc((var(--fan-index) - 3) * 190px))
+    rotate(calc((var(--fan-index) - 3) * 6.5deg));
+  transform-origin: 50% 88%;
+}
+
+.shop-fullscreen-fan .shop-fan-card:hover,
+.shop-fullscreen-fan .shop-fan-card:focus-visible {
+  transform:
+    translate(-50%, -50%)
+    translateX(calc((var(--fan-index) - 3) * 190px))
+    translateY(-24px)
+    rotate(0deg)
+    scale(1.05);
+}
+
+.shop-fullscreen-fan .shop-fan-card-image {
+  height: 77%;
+}
+
+.shop-fullscreen-fan .shop-fan-card-name {
+  font-size: clamp(10px, 0.8vw, 13px);
+}
+
+.shop-fullscreen-fan .shop-fan-card-price {
+  font-size: clamp(13px, 1vw, 17px);
+}
+
+@media (max-width: 1200px) {
+  .shop-fullscreen-fan .shop-fan-card {
+    width: clamp(145px, 19vw, 220px);
+    height: clamp(270px, 48vh, 370px);
+    transform:
+      translate(-50%, -50%)
+      translateX(calc((var(--fan-index) - 3) * 112px))
+      rotate(calc((var(--fan-index) - 3) * 6deg));
+  }
+
+  .shop-fullscreen-fan .shop-fan-card:hover,
+  .shop-fullscreen-fan .shop-fan-card:focus-visible {
+    transform:
+      translate(-50%, -50%)
+      translateX(calc((var(--fan-index) - 3) * 112px))
+      translateY(-18px)
+      rotate(0deg)
+      scale(1.04);
+  }
+}
+
+@media (max-width: 768px) {
+  .shop-showcase {
+    height: calc(100svh - 110px);
+    min-height: 620px;
+  }
+
+  .shop-fullscreen-fan .shop-fan-card {
+    width: clamp(100px, 27vw, 140px);
+    height: 230px;
+    transform:
+      translate(-50%, -50%)
+      translateX(calc((var(--fan-index) - 3) * 39px))
+      rotate(calc((var(--fan-index) - 3) * 5deg));
+  }
+
+  .shop-fullscreen-fan .shop-fan-card:hover,
+  .shop-fullscreen-fan .shop-fan-card:focus-visible {
+    transform:
+      translate(-50%, -50%)
+      translateX(calc((var(--fan-index) - 3) * 39px))
+      translateY(-14px)
+      rotate(0deg)
+      scale(1.03);
+  }
+}
+
+/* ==========================================
+   KENZUKA HOMEPAGE - SEVEN LAYERED 3D CARDS
+   Inspired by the existing Collections carousel
+========================================== */
+
+.home-product-showcase {
+  position: relative;
+  height: calc(100svh - 128px);
+  min-height: 620px;
+  max-height: 1000px;
+  padding: 0;
+  display: block;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.home-product-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  perspective: 1600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.home-product-slide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(280px, 35vw, 500px);
+  height: 82%;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #171717;
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  transform-style: preserve-3d;
+  transition:
+    transform .75s cubic-bezier(.2, .75, .25, 1),
+    filter .75s ease,
+    opacity .75s ease;
+}
+
+.home-product-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .8s ease;
+}
+
+.home-product-slide::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    0deg,
+    rgba(0, 0, 0, .88) 0%,
+    rgba(0, 0, 0, .15) 48%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
+
+.home-product-slide.center {
+  z-index: 10;
+  opacity: 1;
+  filter: none;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.home-product-slide.left-1 {
+  z-index: 9;
+  opacity: .95;
+  filter: brightness(.78);
+  transform: translate(-82%, -50%) rotateY(12deg) scale(.88);
+}
+
+.home-product-slide.right-1 {
+  z-index: 9;
+  opacity: .95;
+  filter: brightness(.78);
+  transform: translate(-18%, -50%) rotateY(-12deg) scale(.88);
+}
+
+.home-product-slide.left-2 {
+  z-index: 8;
+  opacity: .9;
+  filter: brightness(.65);
+  transform: translate(-115%, -50%) rotateY(18deg) scale(.78);
+}
+
+.home-product-slide.right-2 {
+  z-index: 8;
+  opacity: .9;
+  filter: brightness(.65);
+  transform: translate(15%, -50%) rotateY(-18deg) scale(.78);
+}
+
+.home-product-slide.left-3 {
+  z-index: 7;
+  opacity: .85;
+  filter: brightness(.55);
+  transform: translate(-148%, -50%) rotateY(22deg) scale(.68);
+}
+
+.home-product-slide.right-3 {
+  z-index: 7;
+  opacity: .85;
+  filter: brightness(.55);
+  transform: translate(48%, -50%) rotateY(-22deg) scale(.68);
+}
+
+.home-product-slide.center:hover {
+  transform: translate(-50%, -52%) scale(1.025);
+}
+
+.home-product-slide:hover img {
+  transform: scale(1.045);
+}
+
+.home-product-overlay {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+  color: #fff;
+  pointer-events: none;
+}
+
+.home-product-number {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.home-product-overlay p {
+  margin: 0 0 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.home-product-overlay h3 {
+  margin: 0 0 14px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(25px, 3vw, 42px);
+  line-height: .98;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.home-product-overlay strong {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 17px;
+  letter-spacing: .5px;
+}
+
+@media (max-width: 768px) {
+  .home-product-showcase {
+    height: calc(100svh - 110px);
+    min-height: 580px;
+  }
+
+  .home-product-slide {
+    width: 68vw;
+    height: 72%;
+  }
+
+  .home-product-slide.left-1 {
+    transform: translate(-82%, -50%) rotateY(10deg) scale(.86);
+  }
+
+  .home-product-slide.right-1 {
+    transform: translate(-18%, -50%) rotateY(-10deg) scale(.86);
+  }
+
+  .home-product-slide.left-2 {
+    transform: translate(-108%, -50%) rotateY(15deg) scale(.76);
+  }
+
+  .home-product-slide.right-2 {
+    transform: translate(8%, -50%) rotateY(-15deg) scale(.76);
+  }
+
+  .home-product-slide.left-3 {
+    transform: translate(-134%, -50%) rotateY(18deg) scale(.66);
+  }
+
+  .home-product-slide.right-3 {
+    transform: translate(34%, -50%) rotateY(-18deg) scale(.66);
+  }
+
+  .home-product-overlay {
+    padding: 16px;
+  }
+
+  .home-product-overlay h3 {
+    font-size: 27px;
+  }
+
+  .home-product-overlay strong {
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-product-slide,
+  .home-product-slide img {
+    transition: none;
+  }
+}
+
+/* HOMEPAGE PRODUCT CAROUSEL - DRAG AND SCREEN FIT */
+.home-product-stage {
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.home-product-stage:active {
+  cursor: grabbing;
+}
+
+.home-product-slide {
+  width: clamp(220px, 27vw, 390px);
+}
+
+.home-product-slide img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+@media (max-width: 768px) {
+  .home-product-slide {
+    width: 58vw;
+  }
+}
+
+
+/* KENZUKA - FULL SCREEN PRODUCT CARD SPACING */
+.home-product-slide.left-1 {
+  transform: translate(-100%, -50%) rotateY(12deg) scale(.88);
+}
+
+.home-product-slide.right-1 {
+  transform: translate(0%, -50%) rotateY(-12deg) scale(.88);
+}
+
+.home-product-slide.left-2 {
+  transform: translate(-150%, -50%) rotateY(18deg) scale(.78);
+}
+
+.home-product-slide.right-2 {
+  transform: translate(50%, -50%) rotateY(-18deg) scale(.78);
+}
+
+.home-product-slide.left-3 {
+  transform: translate(-200%, -50%) rotateY(22deg) scale(.68);
+}
+
+.home-product-slide.right-3 {
+  transform: translate(100%, -50%) rotateY(-22deg) scale(.68);
+}
+
+
+/* KENZUKA - SEVEN PRODUCT FULL-WIDTH SHOWCASE */
+.home-product-stage {
+  overflow: hidden;
+}
+
+.home-product-slide {
+  width: clamp(110px, 12vw, 205px);
+  height: 76%;
+}
+
+.home-product-slide.center {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.home-product-slide.left-1 {
+  transform: translate(calc(-50% - 14vw), -50%) rotateY(0deg) scale(.94);
+}
+
+.home-product-slide.right-1 {
+  transform: translate(calc(-50% + 14vw), -50%) rotateY(0deg) scale(.94);
+}
+
+.home-product-slide.left-2 {
+  transform: translate(calc(-50% - 28vw), -50%) rotateY(0deg) scale(.92);
+}
+
+.home-product-slide.right-2 {
+  transform: translate(calc(-50% + 28vw), -50%) rotateY(0deg) scale(.92);
+}
+
+.home-product-slide.left-3 {
+  transform: translate(calc(-50% - 42vw), -50%) rotateY(0deg) scale(.90);
+}
+
+.home-product-slide.right-3 {
+  transform: translate(calc(-50% + 42vw), -50%) rotateY(0deg) scale(.90);
+}
+
+/* VISIBLE AND CLICKABLE HOMEPAGE ARROWS */
+.home-carousel-arrow {
+  position: absolute;
+  z-index: 50;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: 50%;
+  background: rgba(8,9,8,.9);
+  color: #fff;
+  font-size: 28px;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+
+.home-carousel-prev {
+  left: 18px;
+}
+
+.home-carousel-next {
+  right: 18px;
+}
+
+.home-carousel-arrow:hover {
+  background: #f4ae21;
+  color: #080908;
+  transform: translateY(-50%) scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .home-product-slide {
+    width: 10vw;
+    min-width: 38px;
+    max-width: 76px;
+    height: 65%;
+  }
+
+  .home-product-slide.left-1 {
+    transform: translate(calc(-50% - 14vw), -50%) scale(.94);
+  }
+
+  .home-product-slide.right-1 {
+    transform: translate(calc(-50% + 14vw), -50%) scale(.94);
+  }
+
+  .home-product-slide.left-2 {
+    transform: translate(calc(-50% - 28vw), -50%) scale(.92);
+  }
+
+  .home-product-slide.right-2 {
+    transform: translate(calc(-50% + 28vw), -50%) scale(.92);
+  }
+
+  .home-product-slide.left-3 {
+    transform: translate(calc(-50% - 42vw), -50%) scale(.90);
+  }
+
+  .home-product-slide.right-3 {
+    transform: translate(calc(-50% + 42vw), -50%) scale(.90);
+  }
+
+  .home-carousel-arrow {
+    width: 34px;
+    height: 34px;
+    font-size: 21px;
+  }
+
+  .home-carousel-prev {
+    left: 5px;
+  }
+
+  .home-carousel-next {
+    right: 5px;
+  }
+
+  .home-product-overlay {
+    padding: 5px;
+  }
+
+  .home-product-overlay h3 {
+    font-size: 12px;
+  }
+
+  .home-product-overlay p {
+    font-size: 7px;
+    letter-spacing: .5px;
+  }
+
+  .home-product-overlay strong {
+    font-size: 10px;
+  }
+
+  .home-product-number {
+    font-size: 7px;
+    letter-spacing: 0;
+  }
+}
+
+/* KENZUKA - SHOW COMPLETE T-SHIRT IMAGES */
+.home-product-slide {
+  overflow: hidden;
+  background: #111;
+}
+
+.home-product-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  transform: none;
+}
+
+.home-product-slide:hover img {
+  transform: none;
+}
+
+/* KENZUKA - SQUARE PRODUCT CARDS */
+.home-product-slide {
+  width: clamp(110px, 12vw, 205px);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
+.home-product-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  transform: scale(1);
+}
+
+.home-product-slide:hover img {
+  transform: scale(1.04);
+}
+
+/* Bring all seven cards slightly closer */
+.home-product-slide.left-1 {
+  transform: translate(calc(-50% - 13vw), -50%);
+}
+
+.home-product-slide.right-1 {
+  transform: translate(calc(-50% + 13vw), -50%);
+}
+
+.home-product-slide.left-2 {
+  transform: translate(calc(-50% - 26vw), -50%);
+}
+
+.home-product-slide.right-2 {
+  transform: translate(calc(-50% + 26vw), -50%);
+}
+
+.home-product-slide.left-3 {
+  transform: translate(calc(-50% - 39vw), -50%);
+}
+
+.home-product-slide.right-3 {
+  transform: translate(calc(-50% + 39vw), -50%);
+}
+
+@media (max-width: 768px) {
+  .home-product-slide {
+    width: clamp(48px, 12vw, 92px);
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  .home-product-slide.left-1 {
+    transform: translate(calc(-50% - 13vw), -50%);
+  }
+
+  .home-product-slide.right-1 {
+    transform: translate(calc(-50% + 13vw), -50%);
+  }
+
+  .home-product-slide.left-2 {
+    transform: translate(calc(-50% - 26vw), -50%);
+  }
+
+  .home-product-slide.right-2 {
+    transform: translate(calc(-50% + 26vw), -50%);
+  }
+
+  .home-product-slide.left-3 {
+    transform: translate(calc(-50% - 39vw), -50%);
+  }
+
+  .home-product-slide.right-3 {
+    transform: translate(calc(-50% + 39vw), -50%);
+  }
+}
+
+/* ==========================================
+   KENZUKA HOME - GOLD 3D PRODUCT FAN
+========================================== */
+
+.home-product-showcase {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  height: calc(100svh - 128px);
+  min-height: 620px;
+  max-height: 1000px;
+  padding: 0;
+  display: block;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(244,174,33,.12), transparent 48%),
+    linear-gradient(115deg, #080908 0%, #11100c 52%, #080908 100%);
+}
+
+.home-product-showcase::before {
+  opacity: .14;
+  mask-image: linear-gradient(to bottom, transparent, black 25%, black 80%, transparent);
+}
+
+.home-product-showcase .shop-showcase-glow {
+  width: min(75vw, 900px);
+  height: min(75vw, 900px);
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(244,174,33,.17),
+    rgba(244,174,33,.045) 45%,
+    transparent 72%
+  );
+  filter: blur(12px);
+}
+
+.home-product-showcase .shop-fullscreen-fan {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+  perspective: 1800px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.home-product-showcase .shop-fullscreen-fan:active {
+  cursor: grabbing;
+}
+
+.home-product-showcase .shop-fan-glow {
+  position: absolute;
+  width: 65%;
+  height: 48%;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(244,174,33,.2), transparent 70%);
+  filter: blur(45px);
+  pointer-events: none;
+}
+
+.home-product-showcase .shop-fan-card {
+  position: absolute;
+  top: 47%;
+  left: 50%;
+  width: clamp(145px, 17vw, 245px);
+  height: clamp(285px, 53vh, 455px);
+  padding: 10px;
+  border: 1px solid rgba(244,174,33,.2);
+  border-radius: 13px;
+  background: linear-gradient(155deg, #25231c, #10100d 75%);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transform:
+    translate(-50%, -50%)
+    translateX(calc((var(--fan-index) - 3) * min(13vw, 185px)))
+    rotate(calc((var(--fan-index) - 3) * 6.5deg));
+  transform-origin: 50% 88%;
+  box-shadow:
+    0 22px 55px rgba(0,0,0,.58),
+    0 0 22px rgba(244,174,33,.055);
+  transition:
+    transform 450ms cubic-bezier(.2,.8,.2,1),
+    box-shadow 450ms ease,
+    border-color 300ms ease;
+  will-change: transform;
+}
+
+.home-product-showcase .shop-fan-card:hover,
+.home-product-showcase .shop-fan-card:focus-visible {
+  z-index: 40 !important;
+  transform:
+    translate(-50%, -50%)
+    translateX(calc((var(--fan-index) - 3) * min(13vw, 185px)))
+    translateY(-24px)
+    rotate(0deg)
+    scale(1.06);
+  border-color: rgba(244,174,33,.85);
+  box-shadow:
+    0 30px 75px rgba(0,0,0,.72),
+    0 0 28px rgba(244,174,33,.18);
+  outline: none;
+}
+
+.home-product-showcase .shop-fan-card-image {
+  position: relative;
+  width: 100%;
+  height: 77%;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #191814;
+}
+
+.home-product-showcase .shop-fan-card-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  transition: transform 500ms ease;
+  user-select: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.home-product-showcase .shop-fan-card:hover .shop-fan-card-image img {
+  transform: scale(1.07);
+}
+
+.home-product-showcase .shop-fan-card-tag {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  padding: 5px 7px;
+  border-radius: 3px;
+  background: #F4AE21;
+  color: #080908;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.home-product-showcase .shop-fan-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 4px 3px;
+}
+
+.home-product-showcase .shop-fan-card-name {
+  overflow: hidden;
+  color: #eee;
+  font-size: clamp(10px, .8vw, 13px);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-product-showcase .shop-fan-card-price {
+  color: #F4AE21;
+  font-size: clamp(13px, 1vw, 17px);
+  font-weight: 800;
+}
+
+.home-product-showcase .shop-fan-caption {
+  position: absolute;
+  right: 50%;
+  bottom: 12%;
+  transform: translateX(50%);
+  color: rgba(244,174,33,.65);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 5px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.home-fan-bottom {
+  position: absolute;
+  z-index: 45;
+  left: 7%;
+  right: 7%;
+  bottom: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  color: rgba(255,255,255,.58);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  pointer-events: none;
+}
+
+.home-product-showcase .home-carousel-arrow {
+  top: 48%;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(244,174,33,.55);
+  border-radius: 50%;
+  background: rgba(8,9,8,.78);
+  color: #F4AE21;
+  backdrop-filter: blur(8px);
+}
+
+.home-product-showcase .home-carousel-arrow:hover {
+  background: #F4AE21;
+  color: #080908;
+}
+
+.home-product-showcase .home-carousel-prev {
+  left: 3%;
+}
+
+.home-product-showcase .home-carousel-next {
+  right: 3%;
+}
+
+@media (max-width: 1200px) {
+  .home-product-showcase .shop-fan-card {
+    width: clamp(130px, 18vw, 205px);
+    height: clamp(270px, 48vh, 380px);
+    transform:
+      translate(-50%, -50%)
+      translateX(calc((var(--fan-index) - 3) * 12vw))
+      rotate(calc((var(--fan-index) - 3) * 6deg));
+  }
+
+  .home-product-showcase .shop-fan-card:hover,
+  .home-product-showcase .shop-fan-card:focus-visible {
+    transform:
+      translate(-50%, -50%)
+      translateX(calc((var(--fan-index) - 3) * 12vw))
+      translateY(-18px)
+      rotate(0deg)
+      scale(1.04);
+  }
+}
+
+@media (max-width: 768px) {
+  .home-product-showcase {
+    height: calc(100svh - 110px);
+    min-height: 590px;
+  }
+
+  .home-product-showcase .shop-fan-card {
+    width: clamp(100px, 25vw, 140px);
+    height: 245px;
+    padding: 7px;
+    transform:
+      translate(-50%, -50%)
+      translateX(calc((var(--fan-index) - 3) * 12vw))
+      rotate(calc((var(--fan-index) - 3) * 5deg));
+  }
+
+  .home-product-showcase .shop-fan-card:hover,
+  .home-product-showcase .shop-fan-card:focus-visible {
+    transform:
+      translate(-50%, -50%)
+      translateX(calc((var(--fan-index) - 3) * 12vw))
+      translateY(-14px)
+      rotate(0deg)
+      scale(1.03);
+  }
+
+  .home-product-showcase .shop-fan-card-image {
+    height: 75%;
+  }
+
+  .home-product-showcase .shop-fan-card-name {
+    font-size: 9px;
+  }
+
+  .home-product-showcase .shop-fan-card-price {
+    font-size: 12px;
+  }
+
+  .home-product-showcase .shop-fan-card-tag {
+    font-size: 7px;
+  }
+
+  .home-product-showcase .shop-fan-caption {
+    bottom: 13%;
+    font-size: 7px;
+    letter-spacing: 2px;
+  }
+
+  .home-fan-bottom {
+    left: 5%;
+    right: 5%;
+    bottom: 14px;
+    gap: 6px;
+    font-size: 6px;
+    letter-spacing: .7px;
+  }
+
+  .home-product-showcase .home-carousel-arrow {
+    top: 48%;
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+  }
+
+  .home-product-showcase .home-carousel-prev {
+    left: 2%;
+  }
+
+  .home-product-showcase .home-carousel-next {
+    right: 2%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-product-showcase .shop-fan-card,
+  .home-product-showcase .shop-fan-card-image img {
+    transition: none;
+  }
+}
+
+/* ==========================================
+   KENZUKA SHOPPING HOME - MOVABLE 3D STACK
+========================================== */
+
+.home-product-showcase {
+  background:
+    radial-gradient(ellipse at 58% 48%, rgba(201, 20, 36, .18), transparent 48%),
+    linear-gradient(115deg, #080808 0%, #10090b 55%, #080808 100%);
+}
+
+.home-product-showcase .home-product-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  perspective: 1600px;
+  overflow: hidden;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.home-product-showcase .home-product-stage:active {
+  cursor: grabbing;
+}
+
+.home-product-showcase .home-product-slide {
+  width: clamp(145px, 17vw, 235px);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 12px;
+  background: #151515;
+  transform-style: preserve-3d;
+  transition:
+    transform .65s cubic-bezier(.2,.75,.25,1),
+    filter .65s ease,
+    opacity .65s ease;
+}
+
+.home-product-showcase .home-product-slide.center {
+  z-index: 10;
+  opacity: 1;
+  filter: brightness(1);
+  transform: translate(-50%, -50%) scale(1.12);
+}
+
+.home-product-showcase .home-product-slide.left-1 {
+  z-index: 9;
+  opacity: .96;
+  filter: brightness(.82);
+  transform: translate(calc(-50% - 13vw), -50%) rotateY(13deg) scale(.94);
+}
+
+.home-product-showcase .home-product-slide.right-1 {
+  z-index: 9;
+  opacity: .96;
+  filter: brightness(.82);
+  transform: translate(calc(-50% + 13vw), -50%) rotateY(-13deg) scale(.94);
+}
+
+.home-product-showcase .home-product-slide.left-2 {
+  z-index: 8;
+  opacity: .85;
+  filter: brightness(.68);
+  transform: translate(calc(-50% - 26vw), -50%) rotateY(18deg) scale(.86);
+}
+
+.home-product-showcase .home-product-slide.right-2 {
+  z-index: 8;
+  opacity: .85;
+  filter: brightness(.68);
+  transform: translate(calc(-50% + 26vw), -50%) rotateY(-18deg) scale(.86);
+}
+
+.home-product-showcase .home-product-slide.left-3 {
+  z-index: 7;
+  opacity: .72;
+  filter: brightness(.55);
+  transform: translate(calc(-50% - 39vw), -50%) rotateY(22deg) scale(.78);
+}
+
+.home-product-showcase .home-product-slide.right-3 {
+  z-index: 7;
+  opacity: .72;
+  filter: brightness(.55);
+  transform: translate(calc(-50% + 39vw), -50%) rotateY(-22deg) scale(.78);
+}
+
+.home-product-showcase .home-product-slide img {
+  pointer-events: none;
+  object-fit: contain;
+  padding: 8px;
+}
+
+.home-product-showcase .home-product-slide.center:hover {
+  transform: translate(-50%, -52%) scale(1.15);
+}
+
+.home-product-showcase .home-product-overlay {
+  padding: 14px;
+}
+
+.home-product-showcase .home-product-overlay h3 {
+  font-size: clamp(17px, 2vw, 27px);
+}
+
+.home-product-showcase .home-product-overlay p {
+  color: #e0b3b7;
+}
+
+.home-product-showcase .home-product-overlay strong {
+  color: #fff;
+}
+
+.home-product-showcase .home-carousel-arrow {
+  top: 50%;
+  z-index: 30;
+}
+
+.home-product-showcase .home-carousel-prev {
+  left: 2.5%;
+}
+
+.home-product-showcase .home-carousel-next {
+  right: 2.5%;
+}
+
+.home-product-showcase .home-carousel-arrow:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.home-carousel-empty {
+  color: #fff;
+  letter-spacing: 3px;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .home-product-showcase .home-product-slide {
+    width: clamp(105px, 28vw, 155px);
+  }
+
+  .home-product-showcase .home-product-slide.center {
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+
+  .home-product-showcase .home-product-slide.left-1 {
+    transform: translate(calc(-50% - 19vw), -50%) rotateY(10deg) scale(.92);
+  }
+
+  .home-product-showcase .home-product-slide.right-1 {
+    transform: translate(calc(-50% + 19vw), -50%) rotateY(-10deg) scale(.92);
+  }
+
+  .home-product-showcase .home-product-slide.left-2 {
+    transform: translate(calc(-50% - 38vw), -50%) rotateY(14deg) scale(.82);
+  }
+
+  .home-product-showcase .home-product-slide.right-2 {
+    transform: translate(calc(-50% + 38vw), -50%) rotateY(-14deg) scale(.82);
+  }
+
+  .home-product-showcase .home-product-slide.left-3 {
+    transform: translate(calc(-50% - 55vw), -50%) rotateY(17deg) scale(.72);
+  }
+
+  .home-product-showcase .home-product-slide.right-3 {
+    transform: translate(calc(-50% + 55vw), -50%) rotateY(-17deg) scale(.72);
+  }
+
+  .home-product-showcase .home-product-overlay {
+    padding: 7px;
+  }
+
+  .home-product-showcase .home-product-overlay h3 {
+    font-size: 12px;
+  }
+
+  .home-product-showcase .home-product-overlay p {
+    font-size: 7px;
+  }
+
+  .home-product-showcase .home-product-overlay strong {
+    font-size: 10px;
+  }
+
+  .home-product-showcase .home-carousel-prev {
+    left: 3px;
+  }
+
+  .home-product-showcase .home-carousel-next {
+    right: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-product-showcase .home-product-slide {
+    transition: none;
+  }
+}
+
+/* ==========================================
+   KENZUKA SHOPPING HOME - BLACK & RED EDITION
+   Product-focused, frameless, larger carousel
+========================================== */
+
+.home-product-showcase {
+  height: min(100svh, 1050px);
+  min-height: 680px;
+  max-height: none;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(210, 12, 35, .25), transparent 58%),
+    linear-gradient(120deg, #030303 0%, #100306 48%, #050505 100%);
+}
+
+.home-product-showcase .home-product-stage {
+  perspective: 1800px;
+}
+
+.home-product-showcase .home-product-slide {
+  width: clamp(230px, 29vw, 440px);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-product-showcase .home-product-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+}
+
+.home-product-showcase .home-product-slide.center {
+  transform: translate(-50%, -50%) scale(1.2);
+  filter: brightness(1.08);
+}
+
+.home-product-showcase .home-product-slide.left-1 {
+  transform: translate(calc(-50% - 16vw), -50%) rotateY(10deg) scale(.84);
+}
+
+.home-product-showcase .home-product-slide.right-1 {
+  transform: translate(calc(-50% + 16vw), -50%) rotateY(-10deg) scale(.84);
+}
+
+.home-product-showcase .home-product-slide.left-2 {
+  transform: translate(calc(-50% - 32vw), -50%) rotateY(15deg) scale(.68);
+}
+
+.home-product-showcase .home-product-slide.right-2 {
+  transform: translate(calc(-50% + 32vw), -50%) rotateY(-15deg) scale(.68);
+}
+
+.home-product-showcase .home-product-slide.left-3 {
+  transform: translate(calc(-50% - 48vw), -50%) rotateY(18deg) scale(.54);
+}
+
+.home-product-showcase .home-product-slide.right-3 {
+  transform: translate(calc(-50% + 48vw), -50%) rotateY(-18deg) scale(.54);
+}
+
+.home-product-showcase .home-product-slide.center:hover {
+  transform: translate(-50%, -52%) scale(1.24);
+}
+
+.home-product-showcase .home-product-overlay {
+  padding: 16px;
+  background: linear-gradient(to top, rgba(0,0,0,.88), transparent);
+}
+
+.home-product-showcase .home-product-overlay p {
+  color: #ff5368;
+}
+
+.home-product-showcase .home-product-overlay h3 {
+  color: #fff;
+  text-shadow: 0 2px 12px #000;
+}
+
+.home-product-showcase .home-product-overlay strong {
+  color: #ff304d;
+}
+
+.home-product-showcase .home-carousel-arrow {
+  border-color: rgba(255, 48, 77, .75);
+  background: rgba(8, 0, 2, .85);
+  color: #ff304d;
+}
+
+.home-product-showcase .home-carousel-arrow:hover {
+  background: #e31335;
+  color: #fff;
+}
+
+.home-product-showcase .shop-fan-caption {
+  color: rgba(255, 65, 88, .8);
+}
+
+@media (max-width: 768px) {
+  .home-product-showcase {
+    height: calc(100svh - 90px);
+    min-height: 600px;
+  }
+
+  .home-product-showcase .home-product-slide {
+    width: clamp(170px, 46vw, 260px);
+  }
+
+  .home-product-showcase .home-product-slide.center {
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+
+  .home-product-showcase .home-product-slide.left-1 {
+    transform: translate(calc(-50% - 22vw), -50%) rotateY(8deg) scale(.8);
+  }
+
+  .home-product-showcase .home-product-slide.right-1 {
+    transform: translate(calc(-50% + 22vw), -50%) rotateY(-8deg) scale(.8);
+  }
+
+  .home-product-showcase .home-product-slide.left-2 {
+    transform: translate(calc(-50% - 44vw), -50%) rotateY(12deg) scale(.62);
+  }
+
+  .home-product-showcase .home-product-slide.right-2 {
+    transform: translate(calc(-50% + 44vw), -50%) rotateY(-12deg) scale(.62);
+  }
+
+  .home-product-showcase .home-product-slide.left-3 {
+    transform: translate(calc(-50% - 66vw), -50%) scale(.46);
+  }
+
+  .home-product-showcase .home-product-slide.right-3 {
+    transform: translate(calc(-50% + 66vw), -50%) scale(.46);
+  }
+}
+
+/* ==========================================
+   KENZUKA HOME - MONOCHROME PRODUCT DISPLAY
+========================================== */
+
+.home-product-showcase {
+  background: #000 !important;
+  color: #fff;
+}
+
+.home-product-showcase::before,
+.home-product-showcase::after {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.home-product-showcase .home-product-slide {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none !important;
+  outline: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible;
+}
+
+.home-product-showcase .home-product-slide::before,
+.home-product-showcase .home-product-slide::after {
+  content: none !important;
+  display: none !important;
+}
+
+.home-product-showcase .home-product-slide img {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  object-fit: contain;
+}
+
+/* Keep product details at the bottom */
+.home-product-showcase .home-product-overlay {
+  position: absolute !important;
+  top: auto !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 34px 12px 12px !important;
+  text-align: center;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 0, 0, .78)
+  ) !important;
+  transform: none !important;
+}
+
+.home-product-showcase .home-product-overlay p {
+  color: #c8c8c8 !important;
+  margin: 0;
+}
+
+.home-product-showcase .home-product-overlay h3 {
+  color: #fff !important;
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 2px 10px #000;
+}
+
+.home-product-showcase .home-product-overlay strong {
+  color: #fff !important;
+  margin: 0;
+}
+
+.home-product-showcase .home-carousel-arrow {
+  color: #fff !important;
+  border-color: rgba(255,255,255,.65) !important;
+  background: rgba(0,0,0,.8) !important;
+}
+
+.home-product-showcase .home-carousel-arrow:hover {
+  color: #000 !important;
+  background: #fff !important;
+}
+
+.home-product-showcase .shop-fan-caption {
+  color: rgba(255,255,255,.65) !important;
+}
+
+
+/* ==========================================
+   KENZUKA HOME - MOBILE RESPONSIVE LAYOUT
+========================================== */
+
+@media (max-width: 768px) {
+  .home-product-showcase {
+    height: calc(100svh - 80px);
+    min-height: 540px;
+    max-height: 780px;
+    overflow: hidden;
+    background: #000 !important;
+  }
+
+  .home-product-showcase .home-product-stage {
+    perspective: 1100px;
+    overflow: hidden;
+  }
+
+  .home-product-showcase .home-product-slide {
+    width: clamp(230px, 76vw, 320px);
+    max-width: 82vw;
+  }
+
+  .home-product-showcase .home-product-slide.center {
+    transform: translate(-50%, -50%) scale(1.04);
+    z-index: 10;
+    opacity: 1;
+  }
+
+  .home-product-showcase .home-product-slide.left-1 {
+    transform: translate(calc(-50% - 34vw), -50%) rotateY(8deg) scale(.68);
+    z-index: 9;
+    opacity: .78;
+  }
+
+  .home-product-showcase .home-product-slide.right-1 {
+    transform: translate(calc(-50% + 34vw), -50%) rotateY(-8deg) scale(.68);
+    z-index: 9;
+    opacity: .78;
+  }
+
+  .home-product-showcase .home-product-slide.left-2 {
+    transform: translate(calc(-50% - 58vw), -50%) rotateY(10deg) scale(.42);
+    z-index: 8;
+    opacity: .48;
+  }
+
+  .home-product-showcase .home-product-slide.right-2 {
+    transform: translate(calc(-50% + 58vw), -50%) rotateY(-10deg) scale(.42);
+    z-index: 8;
+    opacity: .48;
+  }
+
+  .home-product-showcase .home-product-slide.left-3,
+  .home-product-showcase .home-product-slide.right-3 {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .home-product-showcase .home-product-overlay {
+    padding: 38px 12px 14px !important;
+    gap: 5px;
+  }
+
+  .home-product-showcase .home-product-overlay p {
+    font-size: 9px;
+    letter-spacing: 2px;
+  }
+
+  .home-product-showcase .home-product-overlay h3 {
+    font-size: clamp(15px, 4vw, 19px);
+    line-height: 1.2;
+  }
+
+  .home-product-showcase .home-product-overlay strong {
+    font-size: 14px;
+  }
+
+  .home-product-showcase .home-carousel-arrow {
+    top: 50%;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    z-index: 30;
+  }
+
+  .home-product-showcase .home-carousel-prev {
+    left: 8px;
+  }
+
+  .home-product-showcase .home-carousel-next {
+    right: 8px;
+  }
+}
+
+/* Smaller phones */
+@media (max-width: 390px) {
+  .home-product-showcase {
+    min-height: 510px;
+  }
+
+  .home-product-showcase .home-product-slide {
+    width: 80vw;
+  }
+
+  .home-product-showcase .home-product-slide.left-1 {
+    transform: translate(calc(-50% - 36vw), -50%) rotateY(7deg) scale(.62);
+  }
+
+  .home-product-showcase .home-product-slide.right-1 {
+    transform: translate(calc(-50% + 36vw), -50%) rotateY(-7deg) scale(.62);
+  }
+
+  .home-product-showcase .home-carousel-arrow {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+
+  .home-product-showcase .home-carousel-prev {
+    left: 5px;
+  }
+
+  .home-product-showcase .home-carousel-next {
+    right: 5px;
+  }
+}
+
+
+
+/* KENZUKA - Floating product showcase */
+@keyframes home-product-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+.home-product-showcase .home-product-slide img {
+  animation: home-product-float 3.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-product-showcase .home-product-slide img {
+    animation: none;
+    will-change: auto;
+  }
 }

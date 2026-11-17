@@ -1,4 +1,4 @@
-
+﻿
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -19,7 +19,11 @@ app.use(helmet())
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: [
+    process.env.CLIENT_URL,
+    'http://localhost:5173',
+    'http://localhost:5174',
+  ].filter(Boolean),
   credentials: true,
 }))
 
@@ -91,3 +95,4 @@ const startServer = async () => {
 }
 
 startServer()
+

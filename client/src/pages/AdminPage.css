@@ -1,4 +1,4 @@
-﻿.admin-login-page,
+.admin-login-page,
 .admin-page {
   min-height: 100vh;
   background: #090909;
@@ -410,4 +410,42 @@
   .admin-form-actions {
     flex-wrap: wrap;
   }
+}
+
+
+/* =====================================
+   ADMIN PASSWORD RECOVERY
+   ===================================== */
+
+.admin-forgot-link {
+  display: block;
+  width: 100%;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #e8ad39;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-text-button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #bbb;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-forgot-link:hover,
+.admin-text-button:hover {
+  color: #fff;
+}
+
+.admin-login-card form {
+  margin: 0;
 }
