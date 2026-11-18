@@ -1,4 +1,4 @@
-
+﻿
 import mongoose from 'mongoose'
 import Order from '../models/Order.js'
 import Product from '../models/Product.js'
@@ -26,14 +26,15 @@ export const createOrder = async (req, res) => {
 const combinedItems = new Map()
 
 for (const item of orderItems) {
+  const rawSize = item?.size == null ? '' : item.size
+
   if (
     !item ||
     !item.product ||
     !mongoose.Types.ObjectId.isValid(item.product) ||
     !Number.isSafeInteger(item.quantity) ||
     item.quantity < 1 ||
-    typeof item.size !== 'string' ||
-    !item.size.trim()
+    typeof rawSize !== 'string'
   ) {
     return res.status(400).json({
       success: false,
@@ -41,7 +42,7 @@ for (const item of orderItems) {
     })
   }
 
-  const normalizedSize = item.size.trim().toUpperCase()
+  const normalizedSize = rawSize.trim().toUpperCase()
   const key = `${item.product}-${normalizedSize}`
 
   if (combinedItems.has(key)) {
@@ -100,10 +101,9 @@ const finalOrderItems = Array.from(combinedItems.values())
           !item.product ||
           !mongoose.Types.ObjectId.isValid(item.product) ||
           !Number.isInteger(item.quantity) ||
-          item.quantity < 1 ||
-          !item.size
+          item.quantity < 1
         ) {
-          const error = new Error('Invalid product, quantity, or size.')
+          const error = new Error('Invalid product or quantity.')
           error.statusCode = 400
           throw error
         }
@@ -116,7 +116,15 @@ const finalOrderItems = Array.from(combinedItems.values())
           throw error
         }
 
-        if (!product.sizes.includes(item.size)) {
+        const productSizes = Array.isArray(product.sizes) ? product.sizes : []
+
+        if (productSizes.length > 0 && !item.size) {
+          const error = new Error(`Please select a size for ${product.name}.`)
+          error.statusCode = 400
+          throw error
+        }
+
+        if (productSizes.length > 0 && !productSizes.includes(item.size)) {
           const error = new Error(
             `Size ${item.size} is unavailable for ${product.name}.`
           )
@@ -124,13 +132,26 @@ const finalOrderItems = Array.from(combinedItems.values())
           throw error
         }
 
+        if (productSizes.length === 0 && item.size) {
+          const error = new Error(
+            `${product.name} does not have size options.`
+          )
+          error.statusCode = 400
+          throw error
+        }
+
+        const stockFilter = {
+          _id: product._id,
+          isActive: true,
+          stock: { $gte: item.quantity },
+        }
+
+        if (productSizes.length > 0) {
+          stockFilter.sizes = item.size
+        }
+
         const updatedProduct = await Product.findOneAndUpdate(
-          {
-            _id: product._id,
-            isActive: true,
-            stock: { $gte: item.quantity },
-            sizes: item.size,
-          },
+          stockFilter,
           {
             $inc: { stock: -item.quantity },
           },
@@ -154,7 +175,7 @@ const finalOrderItems = Array.from(combinedItems.values())
           image: product.images[0] || '',
           price: product.price,
           quantity: item.quantity,
-          size: item.size,
+          size: item.size || '',
         })
 
         itemsPrice += product.price * item.quantity
@@ -384,3 +405,4 @@ res.status(200).json({
     }
   }
 }
+

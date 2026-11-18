@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getProducts, type ApiProduct } from './services/api'
 import {
@@ -23,9 +23,7 @@ import {
   type SavedAddress,
 } from './services/authService'
 import {
-  Search,
   ShoppingBag,
-  Menu,
   X,
   ArrowUpRight,
   ChevronLeft,
@@ -38,6 +36,7 @@ import LandingPage from './LandingPage'
 import ProductsPage from './ProductsPage'
 import ProductDetailPage from './ProductDetailPage'
 import AdminPage from './pages/AdminPage'
+import StoreNavbar from './StoreNavbar'
 import './App.css'
 type StoreProduct = ApiProduct & {
   image: string
@@ -175,10 +174,24 @@ const [orderError, setOrderError] = useState('')
   const [customerAddress, setCustomerAddress] = useState('')
   const [customerCity, setCustomerCity] = useState('')
   const [customerPincode, setCustomerPincode] = useState('')
+const [pendingCheckoutLogin, setPendingCheckoutLogin] = useState(false)
+
+useEffect(() => {
+  if (!pendingCheckoutLogin || !currentUser) return
+
+  if (currentUser.role === 'customer') {
+    setPendingCheckoutLogin(false)
+    setShowAccount(false)
+    setShowCheckout(false)
+    setShowPayment(true)
+  } else if (currentUser.role === 'admin') {
+    setPendingCheckoutLogin(false)
+  }
+}, [pendingCheckoutLogin, currentUser])
 
   const [products, setProducts] = useState<StoreProduct[]>([])
   const homeProducts = products
-    .filter((product) => /t[\s-]?shirts?|tees?/i.test(product.category))
+    .filter((product) => product.showIn3D)
     .slice(0, 7)
 
   // Reset the selected product when the T-shirt list changes.
@@ -201,6 +214,17 @@ const [orderError, setOrderError] = useState('')
   // PRODUCT SEARCH, FILTER AND WISHLIST
 const [searchTerm, setSearchTerm] = useState('')
 const [showSearch, setShowSearch] = useState(false)
+const searchInputRef = useRef<HTMLInputElement>(null)
+
+useEffect(() => {
+  if (showSearch) {
+    const timer = window.setTimeout(() => {
+      searchInputRef.current?.focus()
+    }, 50)
+
+    return () => window.clearTimeout(timer)
+  }
+}, [showSearch])
 const [showWishlistOnly, setShowWishlistOnly] = useState(false)
 const [showWishlistPage, setShowWishlistPage] = useState(false)
 
@@ -319,6 +343,10 @@ const filteredProducts = products.filter((product) => {
 
   return matchesSearch && matchesWishlist
 })
+
+const visibleArrivalProducts = showWishlistPage
+  ? filteredProducts
+  : filteredProducts.filter(product => product.showInNewArrivals)
 
 // SEARCH, CATEGORY FILTER AND WISHLIST FILTER
 const handleAuthSubmit = async () => {
@@ -714,15 +742,94 @@ const handleProductBuyNow = (product: StoreProduct, size: string) => {
   setShowCart(false)
   setShowCheckout(true)
 }
+
+const openMainShop = () => {
+  setShowAdminDashboard(false)
+  setShowShop(true)
+  setShowConfirmation(false)
+  setShowPayment(false)
+  setShowCheckout(false)
+  setShowCart(false)
+  setShowAccount(false)
+  setShowWishlistPage(false)
+  setShowWishlistOnly(false)
+  setShowSearch(false)
+  setMenuOpen(false)
+}
+
+const handleNavbarNavigate = (
+  section: 'home' | 'arrivals' | 'products' | 'custom-design' | 'about'
+) => {
+  openMainShop()
+
+  if (section === 'products') {
+    navigate('/products')
+    return
+  }
+
+  navigate(`/#${section}`)
+}
+
+const handleNavbarSearch = () => {
+  openMainShop()
+  setShowSearch(true)
+  navigate('/#arrivals')
+}
+
+const handleNavbarAccount = () => {
+  openMainShop()
+  setShowAccount(true)
+  navigate('/')
+}
+
+const handleNavbarAdminDashboard = () => {
+  setShowAccount(false)
+  setShowAdminDashboard(true)
+  navigate('/')
+}
+
+const handleNavbarWishlist = () => {
+  openMainShop()
+  setShowWishlistPage(true)
+  setShowWishlistOnly(true)
+  navigate('/#arrivals')
+}
+
+const handleNavbarCart = () => {
+  openMainShop()
+  setShowCart(true)
+  navigate('/')
+}
+
+const sharedNavbar = (showSearchButton: boolean) => (
+  <StoreNavbar
+    menuOpen={menuOpen}
+    cartCount={cartCount}
+    showWishlistOnly={showWishlistOnly}
+    isAdmin={currentUser?.role === 'admin'}
+    onAdminDashboard={handleNavbarAdminDashboard}
+    onMenuToggle={() => setMenuOpen((previous) => !previous)}
+    onNavigate={handleNavbarNavigate}
+    onSearch={handleNavbarSearch}
+    showSearchButton={showSearchButton}
+    onAccount={handleNavbarAccount}
+    onWishlist={handleNavbarWishlist}
+    onCart={handleNavbarCart}
+  />
+)
+
 if (showAdminDashboard && currentUser?.role === 'admin') {
   return (
-    <AdminPage
-      onLogout={() => {
-        setCurrentUser(null)
-        setShowAdminDashboard(false)
-        navigate('/')
-      }}
-    />
+    <>
+      {sharedNavbar(true)}
+      <AdminPage
+        onLogout={() => {
+          setCurrentUser(null)
+          setShowAdminDashboard(false)
+          navigate('/')
+        }}
+      />
+    </>
   )
 }
 if (
@@ -730,26 +837,28 @@ if (
   location.pathname !== '/products' &&
   !location.pathname.startsWith('/product/')
 ) {
+ 
   return (
-    <LandingPage
-      onEnter={() => setShowShop(true)}
-      products={products}
-      onProductClick={(product) => {
-        navigate(`/product/${getProductSlug(product as StoreProduct)}`)
-        setSelectedSize('')
-        setSelectedImageIndex(0)
-      }}
-    />
+    <>
+      <LandingPage
+        onEnter={() => setShowShop(true)}
+        products={products}
+        onProductClick={(product) => {
+          navigate(`/product/${getProductSlug(product as StoreProduct)}`)
+          setSelectedSize('')
+          setSelectedImageIndex(0)
+        }}
+      />
+    </>
   )
 }
 
 if (showConfirmation) {
-  return (
+return (
+  <>
+    {sharedNavbar(false)}
     <main className="checkout-page confirmation-page">
-      <header className="checkout-header">
-        <h1>KENZUKA</h1>
-        <p>ORDER CONFIRMATION</p>
-      </header>
+      
 
       <section className="confirmation-card">
      <div className="confirmation-order-id">
@@ -851,18 +960,18 @@ if (showConfirmation) {
         </button>
       </section>
     </main>
+  </>
   )
 }
 
 if (showPayment) {
-  return (
+ return (
+  <>
+    {sharedNavbar(false)}
     <main className="checkout-page">
-      <header className="checkout-header">
-        <h1>KENZUKA</h1>
-        <p>PAYMENT</p>
-      </header>
-
-      <button
+      <header className="checkout-header payment-header">
+        
+        <button
         className="back-shopping"
         onClick={() => {
           setShowPayment(false)
@@ -871,6 +980,8 @@ if (showPayment) {
       >
         BACK TO DELIVERY DETAILS
       </button>
+        <p>PAYMENT</p>
+      </header>
 
       <div className="checkout-container">
         <section className="checkout-form-section">
@@ -994,19 +1105,17 @@ if (showPayment) {
         </div>
       </aside>
     </div>
-  </main>
+    </main>
+  </>
   )
-
-
 }
 
 if (showCheckout) {
   return (
+  <>
+    {sharedNavbar(false)}
     <main className="checkout-page">
-      <header className="checkout-header">
-        <h1>KENZUKA</h1>
-        <p>SECURE CHECKOUT</p>
-      </header>
+      
 
       <button
         className="back-shopping"
@@ -1024,6 +1133,21 @@ if (showCheckout) {
             id="checkout-form"
             onSubmit={(event) => {
               event.preventDefault()
+
+              if (!currentUser || currentUser.role !== 'customer') {
+                setPendingCheckoutLogin(true)
+                setShowCheckout(false)
+                setShowCart(false)
+                setShowOrders(false)
+                setAuthStep('email')
+                setAuthError('Please log in with your customer account to continue checkout.')
+
+                openMainShop()
+                setShowAccount(true)
+                navigate('/')
+                return
+              }
+
               setShowCheckout(false)
               setShowPayment(true)
             }}
@@ -1129,9 +1253,11 @@ if (showCheckout) {
           </button>
         </aside>
       </div>
-    </main>
+      </main>
+  </>
   )
 }
+
 
 if (location.pathname.startsWith('/product/')) {
   const productId = location.pathname.match(/([a-f\d]{24})$/i)?.[1]
@@ -1139,108 +1265,36 @@ if (location.pathname.startsWith('/product/')) {
     products.find((product) => product._id === productId) ?? null
 
   return (
-    <ProductDetailPage
-      product={routeProduct}
-      loading={productsLoading}
-      error={productsError}
-      onAddToCart={handleProductAddToCart}
-      onBuyNow={handleProductBuyNow}
-    />
+    <>
+      {sharedNavbar(false)}
+      <ProductDetailPage
+        product={routeProduct}
+        loading={productsLoading}
+        error={productsError}
+        onAddToCart={handleProductAddToCart}
+        onBuyNow={handleProductBuyNow}
+      />
+    </>
   )
 }
+
+
 if (location.pathname === '/products') {
   return (
-    <ProductsPage
-      products={products}
-      loading={productsLoading}
-      error={productsError}
-    />
+    <>
+      {sharedNavbar(false)}
+      <ProductsPage
+        products={products}
+        loading={productsLoading}
+        error={productsError}
+      />
+    </>
   )
 }
+
 return (
     <main className="website">
-
-      <div className="announcement">
-        <span>KENZUKA | QUALITY FIRST | MADE FOR EVERYDAY | STYLE WITHOUT LIMITS</span>
-        <span>DISCOVER YOUR NEXT LOOK <ArrowUpRight size={13} /></span>
-      </div>
-
-      <header className="navbar">
-        <button
-          className="mobile-menu"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
-        >
-          {menuOpen ? <X /> : <Menu />}
-        </button>
-
-        <a href="#home" className="brand-logo">
-          <img src="/kenzuka-logo.jpeg" alt="KENZUKA" />
-        </a>
-
-        <nav className={menuOpen ? 'nav-links active' : 'nav-links'}>
-          <a href="#home" onClick={() => setMenuOpen(false)}>HOME</a>
-          <a href="#arrivals" onClick={() => setMenuOpen(false)}>NEW ARRIVALS</a>
-          <a href="/products" onClick={() => setMenuOpen(false)}>ALL PRODUCTS</a>
-          <a href="#custom-design" onClick={() => setMenuOpen(false)}>CUSTOM DESIGN</a>
-          <a href="#about" onClick={() => setMenuOpen(false)}>OUR STORY</a>
-        </nav>
-
-           <div className="nav-actions">
-          <button
-  aria-label="Search products"
-  onClick={() => {
-    setShowSearch((previous) => !previous)
-    setShowWishlistOnly(false)
-    document.getElementById('arrivals')?.scrollIntoView({ behavior: 'smooth' })
-  }}
->
-  <Search />
-</button>
-
-          <button
-            aria-label="My account"
-            onClick={() => {
-              setAuthError('')
-              setShowAccount(true)
-            }}
-          >
-            <UserRound />
-          </button>
-
-          {/* WISHLIST BUTTON */}
-          <button
-            aria-label="Wishlist"
-            title="View Wishlist"
-            onClick={() => {
-  setShowWishlistPage(true)
-  setShowWishlistOnly(true)
-  document.getElementById('arrivals')?.scrollIntoView({
-    behavior: 'smooth',
-  })
-}}
-          >
-            <Heart
-              fill={showWishlistOnly ? 'currentColor' : 'none'}
-            />
-          </button>
-
-          {/* SHOPPING CART BUTTON */}
-          <button
-            className="cart-icon-button"
-            aria-label={`Shopping bag with ${cartCount} items`}
-            onClick={() => setShowCart(true)}
-          >
-            <ShoppingBag />
-            {cartCount > 0 && (
-              <span className="cart-count">{cartCount}</span>
-            )}
-          </button>
-
-        </div>
-      </header>
-
-
+      {sharedNavbar(true)}
 
 <section className="shop-showcase home-product-showcase" id="home">
   <div className="shop-showcase-glow" />
@@ -1420,12 +1474,13 @@ return (
   )}
 </h2>
           </div>
-          <a href="#arrivals">DISCOVER MORE <ArrowUpRight size={16} /></a>
+        
         </div>
 
 <div className="shop-controls">
   {showSearch && (
     <input
+      ref={searchInputRef}
       type="text"
       className="product-search-input"
       placeholder="Search KENZUKA products..."
@@ -1454,14 +1509,16 @@ return (
     <p>{productsError}</p>
     ) : products.length === 0 ? (
     <p>No products available right now.</p>
-  ) : filteredProducts.length === 0 ? (
+  ) : visibleArrivalProducts.length === 0 ? (
     <p className="no-products-message">
-      {showWishlistOnly
+      {showWishlistPage
         ? 'Your wishlist is empty. Add your favourite products!'
-        : 'No matching products found.'}
+        : products.some(product => product.showInNewArrivals)
+          ? 'No matching new arrivals found.'
+          : 'No new arrivals available right now.'}
     </p>
   ) : (
-    filteredProducts.map((product) => (
+    visibleArrivalProducts.map((product) => (
       <article
         className="product-card"
         key={product._id}
@@ -1505,6 +1562,13 @@ return (
     ))
   )}
 </div>
+      {!showWishlistPage && (
+        <div className="view-all-container">
+          <a href="/products" className="view-all-button">
+            VIEW ALL <ArrowUpRight size={16} />
+          </a>
+        </div>
+      )}
 
       </section>
 
@@ -2501,6 +2565,20 @@ return (
 }
 
 export default App
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

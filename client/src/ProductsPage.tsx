@@ -87,15 +87,6 @@ export default function ProductsPage({
           <ArrowLeft size={17} />
           BACK TO HOME
         </button>
-
-        <button
-          className="catalogue-logo"
-          onClick={() => navigate('/')}
-        >
-          KENZUKA<span>.</span>
-        </button>
-
-        <span className="catalogue-header-label">THE COLLECTION</span>
       </header>
 
       <section className="catalogue-intro">
@@ -228,3 +219,5 @@ export default function ProductsPage({
     </main>
   )
 }
+
+

@@ -449,3 +449,60 @@
 .admin-login-card form {
   margin: 0;
 }
+/* Separate All Products and 3D Collection tabs */
+.admin-product-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0;
+  border-bottom: 1px solid #333;
+}
+
+.admin-product-subtabs button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 18px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.admin-product-subtabs button:hover,
+.admin-product-subtabs button.active {
+  color: #e8ad39;
+}
+
+.admin-product-subtabs button.active {
+  border-bottom-color: #e8ad39;
+}
+
+.admin-product-subtabs button span {
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: #292929;
+  color: #e8ad39;
+  font-size: 11px;
+}
+
+.admin-product-count {
+  margin: 22px 0 14px;
+  color: #ddd;
+  font-size: 15px;
+}
+
+@media (max-width: 600px) {
+  .admin-product-subtabs {
+    gap: 4px;
+  }
+
+  .admin-product-subtabs button {
+    padding: 12px 10px;
+    font-size: 10px;
+  }
+}

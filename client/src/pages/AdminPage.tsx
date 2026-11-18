@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { loginUser, logoutUser, getStoredUser, requestAdminPasswordReset, verifyAdminPasswordResetOtp, resetAdminPassword, type AuthUser } from '../services/authService'
 import { getProducts, type ApiProduct } from '../services/api'
 import api from '../services/api'
@@ -33,20 +33,22 @@ interface ProductForm {
   price: string
   category: string
   images: string
-  sizes: string
   stock: string
   isFeatured: boolean
+  showIn3D: boolean
+  showInNewArrivals: boolean
 }
 
 const emptyForm: ProductForm = {
   name: '',
   description: '',
   price: '',
-  category: 'T-Shirts',
+  category: 'Oversized T-Shirt',
   images: '',
-  sizes: 'S, M, L, XL',
   stock: '10',
   isFeatured: false,
+  showIn3D: false,
+  showInNewArrivals: false,
 }
 
 const nextStatuses: Record<string, string[]> = {
@@ -87,6 +89,12 @@ function AdminPage({ onLogout }: { onLogout: () => void }) {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders'>('overview')
+  const [productListTab, setProductListTab] = useState<'all' | '3d' | 'new-arrivals'>('all')
+  const visibleProducts = productListTab === '3d'
+    ? products.filter(product => product.showIn3D)
+    : productListTab === 'new-arrivals'
+      ? products.filter(product => product.showInNewArrivals)
+      : products
 
   const [form, setForm] = useState<ProductForm>(emptyForm)
   const [editingProduct, setEditingProduct] = useState<ApiProduct | null>(null)
@@ -251,13 +259,25 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
       name: product.name,
       description: product.description,
       price: String(product.price),
-      category: product.category,
-      images: product.images.join('\n'),
-      sizes: product.sizes.join(', '),
+      category: /cap/i.test(product.category)
+        ? 'Cap'
+        : /jeans|pant/i.test(product.category)
+          ? 'Jeans Pant'
+          : 'Oversized T-Shirt',
+      images: (product.images || []).join('\n'),
       stock: String(product.stock),
       isFeatured: product.isFeatured,
+      showIn3D: Boolean(product.showIn3D),
+      showInNewArrivals: Boolean(product.showInNewArrivals),
     })
     setActiveTab('products')
+    setProductListTab(
+      product.showInNewArrivals
+        ? 'new-arrivals'
+        : product.showIn3D
+          ? '3d'
+          : 'all'
+    )
     setMessage('')
     setError('')
   }
@@ -279,7 +299,9 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
       price: Number(form.price),
       category: form.category.trim(),
       images: form.images.split(/\n|,/).map(image => image.trim()).filter(Boolean),
-      sizes: form.sizes.split(',').map(size => size.trim().toUpperCase()).filter(Boolean),
+      sizes: editingProduct ? (editingProduct.sizes || []) : [],
+      showIn3D: form.showIn3D,
+      showInNewArrivals: form.showInNewArrivals,
       stock: Number(form.stock),
       isFeatured: form.isFeatured,
     }
@@ -566,15 +588,64 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
 
           <form className="admin-product-form" onSubmit={handleProductSubmit}>
             <label>Product name<input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required /></label>
-            <label>Category<input value={form.category} onChange={e => setForm({...form, category: e.target.value})} required /></label>
+            <label>Category
+              <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} required>
+                <option value="Oversized T-Shirt">Oversized T-Shirt</option>
+                <option value="Cap">Cap</option>
+                <option value="Jeans Pant">Jeans Pant</option>
+              </select>
+            </label>
             <label>Description<textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} required /></label>
             <div className="admin-form-grid">
               <label>Price (?)<input type="number" min="0" step="0.01" value={form.price} onChange={e => setForm({...form, price: e.target.value})} required /></label>
               <label>Stock<input type="number" min="0" step="1" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} required /></label>
             </div>
             <label>Image URLs (one per line)<textarea value={form.images} onChange={e => setForm({...form, images: e.target.value})} placeholder="https://example.com/product.jpg" /></label>
-            <label>Available sizes (comma separated)<input value={form.sizes} onChange={e => setForm({...form, sizes: e.target.value})} placeholder="S, M, L, XL" required /></label>
+            
             <label className="admin-checkbox"><input type="checkbox" checked={form.isFeatured} onChange={e => setForm({...form, isFeatured: e.target.checked})} /> Show as featured product</label>
+            <label className="admin-checkbox">
+              <input
+                type="checkbox"
+                checked={form.showIn3D}
+                onChange={e => {
+                  const checked = e.target.checked
+                  const selectedCount = products.filter(
+                    product => product.showIn3D && product._id !== editingProduct?._id
+                  ).length
+
+                  if (checked && !form.showIn3D && selectedCount >= 7) {
+                    setError('3D Collection already has 7 products. Turn one off before selecting another.')
+                    return
+                  }
+
+                  setError('')
+                  setForm({...form, showIn3D: checked})
+                }}
+              />
+              Show in 3D Collection (maximum 7)
+            </label>
+
+            <label className="admin-checkbox">
+              <input
+                type="checkbox"
+                checked={form.showInNewArrivals}
+                onChange={e => {
+                  const checked = e.target.checked
+                  const selectedCount = products.filter(
+                    product => product.showInNewArrivals && product._id !== editingProduct?._id
+                  ).length
+
+                  if (checked && !form.showInNewArrivals && selectedCount >= 4) {
+                    setError('New Arrivals already has 4 products. Turn one off before selecting another.')
+                    return
+                  }
+
+                  setError('')
+                  setForm({...form, showInNewArrivals: checked})
+                }}
+              />
+              Show in New Arrivals (maximum 4)
+            </label>
 
             <div className="admin-form-actions">
               <button className="admin-primary-button" disabled={savingProduct}>{savingProduct ? 'SAVING...' : editingProduct ? 'UPDATE PRODUCT' : 'ADD PRODUCT'}</button>
@@ -582,20 +653,65 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
             </div>
           </form>
 
-          <h2 className="admin-list-title">Existing products ({products.length})</h2>
-          {products.map(product => (
+          <h2 className="admin-list-title">Manage your products</h2>
+
+          <div className="admin-product-subtabs">
+            <button
+              type="button"
+              className={productListTab === 'all' ? 'active' : ''}
+              onClick={() => setProductListTab('all')}
+            >
+              ALL PRODUCTS <span>{products.length}</span>
+            </button>
+            <button
+              type="button"
+              className={productListTab === '3d' ? 'active' : ''}
+              onClick={() => setProductListTab('3d')}
+            >
+              3D COLLECTION <span>{products.filter(product => product.showIn3D).length}/7</span>
+            </button>
+            <button
+              type="button"
+              className={productListTab === 'new-arrivals' ? 'active' : ''}
+              onClick={() => setProductListTab('new-arrivals')}
+            >
+              NEW ARRIVALS <span>{products.filter(product => product.showInNewArrivals).length}/4</span>
+            </button>
+          </div>
+
+          <h3 className="admin-product-count">
+            {productListTab === '3d'
+              ? '3D Collection Products'
+              : productListTab === 'new-arrivals'
+                ? 'New Arrivals Products'
+                : 'All Active Products'}
+            {' '}({visibleProducts.length})
+          </h3>
+
+          {visibleProducts.map(product => (
             <article className="admin-product-row" key={product._id}>
               {product.images[0] && <img src={product.images[0]} alt={product.name} />}
               <div className="admin-product-info">
                 <strong>{product.name}</strong>
                 <span>{product.category} | ₹{product.price} | Stock: {product.stock}</span>
                 {product.isFeatured && <small>FEATURED</small>}
+                {product.showIn3D && <small>3D COLLECTION</small>}
+                {product.showInNewArrivals && <small>NEW ARRIVAL</small>}
               </div>
               <button onClick={() => startEdit(product)}>EDIT</button>
               <button className="admin-danger-button" onClick={() => deactivateProduct(product)}>DEACTIVATE</button>
             </article>
           ))}
-          {products.length === 0 && <p>No active products found.</p>}
+
+          {visibleProducts.length === 0 && (
+            <p>
+              {productListTab === '3d'
+                ? 'No products selected for the 3D Collection yet.'
+                : productListTab === 'new-arrivals'
+                  ? 'No products selected for New Arrivals yet.'
+                  : 'No active products found.'}
+            </p>
+          )}
         </section>
       )}
 
@@ -649,6 +765,7 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
 }
 
 export default AdminPage
+
 
 
 

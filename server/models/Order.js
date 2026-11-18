@@ -1,4 +1,4 @@
-
+﻿
 import mongoose from 'mongoose'
 
 const orderSchema = new mongoose.Schema(
@@ -36,7 +36,8 @@ price: {
 
         size: {
           type: String,
-          required: true,
+          required: false,
+          default: '',
         },
       },
     ],
@@ -121,3 +122,4 @@ price: {
 const Order = mongoose.model('Order', orderSchema)
 
 export default Order
+

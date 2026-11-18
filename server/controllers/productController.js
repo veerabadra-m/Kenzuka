@@ -1,4 +1,4 @@
-
+﻿
 import mongoose from 'mongoose'
 import Product from '../models/Product.js'
 
@@ -11,6 +11,8 @@ const allowedFields = [
   'sizes',
   'stock',
   'isFeatured',
+  'showIn3D',
+  'showInNewArrivals',
   'isActive',
 ]
 
@@ -101,6 +103,33 @@ export const createProduct = async (req, res) => {
   try {
     const productData = getProductData(req.body)
 
+    if (productData.showInNewArrivals === true && productData.isActive !== false) {
+      const arrivalsCount = await Product.countDocuments({
+        isActive: true,
+        showInNewArrivals: true,
+      })
+
+      if (arrivalsCount >= 4) {
+        return res.status(400).json({
+          success: false,
+          message: 'New Arrivals is full. Only 4 active products can be selected.',
+        })
+      }
+    }
+    if (productData.showIn3D === true && productData.isActive !== false) {
+      const threeDCount = await Product.countDocuments({
+        isActive: true,
+        showIn3D: true,
+      })
+
+      if (threeDCount >= 7) {
+        return res.status(400).json({
+          success: false,
+          message: '3D Collection is full. Only 7 active products can be selected.',
+        })
+      }
+    }
+
     const product = await Product.create(productData)
 
     res.status(201).json({
@@ -146,6 +175,46 @@ export const updateProduct = async (req, res) => {
         success: false,
         message: 'Product not found.',
       })
+    }
+
+    const willBeInNewArrivals =
+      productData.showInNewArrivals ?? product.showInNewArrivals
+
+    const willBeActive = productData.isActive ?? product.isActive
+
+    if (
+      willBeInNewArrivals &&
+      willBeActive &&
+      (!product.showInNewArrivals || !product.isActive)
+    ) {
+      const arrivalsCount = await Product.countDocuments({
+        _id: { $ne: product._id },
+        isActive: true,
+        showInNewArrivals: true,
+      })
+
+      if (arrivalsCount >= 4) {
+        return res.status(400).json({
+          success: false,
+          message: 'New Arrivals is full. Only 4 active products can be selected.',
+        })
+      }
+    }
+    const willBeIn3D = productData.showIn3D ?? product.showIn3D
+
+    if (willBeIn3D && willBeActive && (!product.showIn3D || !product.isActive)) {
+      const threeDCount = await Product.countDocuments({
+        _id: { $ne: product._id },
+        isActive: true,
+        showIn3D: true,
+      })
+
+      if (threeDCount >= 7) {
+        return res.status(400).json({
+          success: false,
+          message: '3D Collection is full. Only 7 active products can be selected.',
+        })
+      }
     }
 
     Object.assign(product, productData)
@@ -204,3 +273,6 @@ export const deleteProduct = async (req, res) => {
     })
   }
 }
+
+
+

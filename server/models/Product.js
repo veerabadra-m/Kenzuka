@@ -1,4 +1,4 @@
-
+﻿
 import mongoose from 'mongoose'
 
 const productSchema = new mongoose.Schema(
@@ -34,7 +34,7 @@ const productSchema = new mongoose.Schema(
     sizes: {
       type: [String],
       enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-      default: ['S', 'M', 'L', 'XL'],
+      default: [],
     },
 
     stock: {
@@ -44,6 +44,16 @@ const productSchema = new mongoose.Schema(
     },
 
     isFeatured: {
+      type: Boolean,
+      default: false,
+    },
+
+    showIn3D: {
+      type: Boolean,
+      default: false,
+    },
+
+    showInNewArrivals: {
       type: Boolean,
       default: false,
     },
@@ -61,3 +71,5 @@ const productSchema = new mongoose.Schema(
 const Product = mongoose.model('Product', productSchema)
 
 export default Product
+
+

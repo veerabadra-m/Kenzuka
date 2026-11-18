@@ -58,18 +58,19 @@ export default function ProductDetailPage({
     ? product.images
     : [product.image]
 
-  const hasSizes = product.sizes?.length > 0
-  const canPurchase = hasSizes && Boolean(selectedSize) && product.stock > 0
+  const hasSizes = Boolean(product.sizes?.length)
+  const canPurchase = product.stock > 0 && (!hasSizes || Boolean(selectedSize))
+  const purchaseSize = hasSizes ? selectedSize : ''
 
   const handleAddToBag = () => {
     if (!canPurchase) return
-    onAddToCart(product, selectedSize)
+    onAddToCart(product, purchaseSize)
     setAddedToBag(true)
   }
 
   const handleBuyNow = () => {
     if (!canPurchase) return
-    onBuyNow(product, selectedSize)
+    onBuyNow(product, purchaseSize)
   }
 
   return (
@@ -81,13 +82,6 @@ export default function ProductDetailPage({
         >
           <ArrowLeft size={17} />
           BACK TO COLLECTION
-        </button>
-
-        <button
-          className="detail-logo"
-          onClick={() => navigate('/')}
-        >
-          KENZUKA<span>.</span>
         </button>
 
         <span className="detail-header-label">PRODUCT DETAILS</span>
@@ -152,30 +146,28 @@ export default function ProductDetailPage({
 
           <div className="detail-divider" />
 
-          <div className="detail-size-heading">
-            <span>SELECT YOUR SIZE</span>
-            {selectedSize && <span>SELECTED: {selectedSize}</span>}
-          </div>
+          {hasSizes && (
+            <>
+              <div className="detail-size-heading">
+                <span>SELECT YOUR SIZE</span>
+                {selectedSize && <span>SELECTED: {selectedSize}</span>}
+              </div>
 
-          {hasSizes ? (
-            <div className="detail-size-options">
-              {product.sizes.map((size) => (
-                <button
-                  key={size}
-                  className={selectedSize === size ? 'selected' : ''}
-                  onClick={() => {
-                    setSelectedSize(size)
-                    setAddedToBag(false)
-                  }}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="detail-size-unavailable">
-              SIZE INFORMATION IS NOT AVAILABLE.
-            </p>
+              <div className="detail-size-options">
+                {product.sizes.map((size) => (
+                  <button
+                    key={size}
+                    className={selectedSize === size ? 'selected' : ''}
+                    onClick={() => {
+                      setSelectedSize(size)
+                      setAddedToBag(false)
+                    }}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
 
           <button
@@ -187,7 +179,7 @@ export default function ProductDetailPage({
               ? 'OUT OF STOCK'
               : addedToBag
                 ? 'ADDED TO BAG'
-                : selectedSize
+                : !hasSizes || selectedSize
                   ? 'ADD TO BAG'
                   : 'SELECT A SIZE'}
             <ShoppingBag size={18} />
@@ -220,3 +212,5 @@ export default function ProductDetailPage({
     </main>
   )
 }
+
+

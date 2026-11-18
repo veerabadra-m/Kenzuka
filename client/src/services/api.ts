@@ -28,6 +28,8 @@ export interface ApiProduct {
   stock: number
   isFeatured: boolean
   isActive: boolean
+  showIn3D?: boolean
+  showInNewArrivals?: boolean
 }
 
 export const getProducts = async (): Promise<ApiProduct[]> => {

@@ -1,4 +1,4 @@
-
+﻿
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap');
 
 :root {
@@ -88,18 +88,24 @@ img {
   z-index: 20;
 }
 
+
 .brand-logo {
-  width: 115px;
-  height: 65px;
+  width: 135px;
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.3s ease;
 }
 
 .brand-logo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.brand-logo:hover {
+  transform: scale(1.04);
 }
 
 .nav-links {
@@ -657,10 +663,10 @@ img {
   }
 
   .brand-logo {
-    width: 95px;
-    height: 58px;
-    flex-shrink: 0;
-  }
+  width: 108px;
+  height: 62px;
+  flex-shrink: 0;
+}
 
   .nav-links {
     position: absolute;
@@ -726,9 +732,9 @@ img {
   }
 
   .brand-logo {
-    width: 95px;
-    height: 58px;
-  }
+  width: 108px;
+  height: 62px;
+}
 
   .nav-links {
     position: absolute;
@@ -1561,6 +1567,7 @@ img {
 
 .checkout-header {
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
   padding-bottom: 25px;
@@ -5365,4 +5372,43 @@ img {
     animation: none;
     will-change: auto;
   }
+}
+
+/* NEW ARRIVALS - VIEW ALL BUTTON */
+
+.view-all-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 45px;
+}
+
+.view-all-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 170px;
+  padding: 15px 30px;
+  border: 1px solid var(--red);
+  background: transparent;
+  color: var(--black);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.view-all-button:hover {
+  background: var(--red);
+  color: white;
+  transform: translateY(-3px);
+}
+
+/* Payment page header alignment */
+.payment-header .back-shopping {
+  margin: 0;
 }
