@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+﻿import { useEffect, useState, type FormEvent } from 'react'
 import { loginUser, logoutUser, getStoredUser, requestAdminPasswordReset, verifyAdminPasswordResetOtp, resetAdminPassword, type AuthUser } from '../services/authService'
 import { getProducts, type ApiProduct } from '../services/api'
 import api from '../services/api'
@@ -51,12 +51,21 @@ const emptyForm: ProductForm = {
   showInNewArrivals: false,
 }
 
-const nextStatuses: Record<string, string[]> = {
-  Placed: ['Processing', 'Cancelled'],
-  Processing: ['Shipped', 'Cancelled'],
-  Shipped: ['Delivered'],
-  Delivered: [],
-  Cancelled: [],
+function getISTDate(date: Date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}
+
+function formatRupees(amount: number) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(amount)
 }
 
 function AdminPage({ onLogout }: { onLogout: () => void }) {
@@ -88,6 +97,9 @@ function AdminPage({ onLogout }: { onLogout: () => void }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+    const [orderSearch, setOrderSearch] = useState('')
+  const [orderDateFilter, setOrderDateFilter] = useState('')
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('All')
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders'>('overview')
   const [productListTab, setProductListTab] = useState<'all' | '3d' | 'new-arrivals'>('all')
   const visibleProducts = productListTab === '3d'
@@ -95,8 +107,83 @@ function AdminPage({ onLogout }: { onLogout: () => void }) {
     : productListTab === 'new-arrivals'
       ? products.filter(product => product.showInNewArrivals)
       : products
+        // Dashboard analytics use Indian Standard Time.
+  const todayIST = getISTDate(new Date())
+
+  const totalRevenue = orders
+    .filter(order => order.paymentStatus === 'Paid')
+    .reduce((total, order) => total + Number(order.totalPrice || 0), 0)
+
+  const todaysOrders = orders.filter(
+    order => getISTDate(new Date(order.createdAt)) === todayIST
+  ).length
+
+  const pendingOrders = orders.filter(
+    order => order.orderStatus === 'Placed'
+  ).length
+
+  const salesOverview = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date()
+    date.setDate(date.getDate() - (6 - index))
+
+    const dateKey = getISTDate(date)
+
+    const dailyRevenue = orders
+      .filter(order =>
+        order.paymentStatus === 'Paid' &&
+        getISTDate(new Date(order.createdAt)) === dateKey
+      )
+      .reduce((total, order) => total + Number(order.totalPrice || 0), 0)
+
+    return {
+      date: date.toLocaleDateString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        day: '2-digit',
+        month: 'short',
+      }),
+      revenue: dailyRevenue,
+    }
+  })
+
+  const maxDailyRevenue = Math.max(
+    ...salesOverview.map(day => day.revenue),
+    1
+  )
 
   const [form, setForm] = useState<ProductForm>(emptyForm)
+    const filteredOrders = orders.filter(order => {
+    const search = orderSearch.trim().toLowerCase()
+
+    const customerName = (
+      typeof order.user === 'string'
+        ? order.user
+        : order.user?.name || ''
+    ).toLowerCase()
+
+    const shippingName = (
+      order.shippingAddress?.fullName || ''
+    ).toLowerCase()
+
+    const fullOrderId = order._id.toLowerCase()
+    const shortOrderId = order._id.slice(-8).toLowerCase()
+
+    const matchesSearch =
+      !search ||
+      fullOrderId.includes(search) ||
+      shortOrderId.includes(search) ||
+      customerName.includes(search) ||
+      shippingName.includes(search)
+
+    const matchesDate =
+      !orderDateFilter ||
+      getISTDate(new Date(order.createdAt)) === orderDateFilter
+
+    const matchesPayment =
+      paymentStatusFilter === 'All' ||
+      order.paymentStatus === paymentStatusFilter
+
+    return matchesSearch && matchesDate && matchesPayment
+  })
   const [editingProduct, setEditingProduct] = useState<ApiProduct | null>(null)
   const [savingProduct, setSavingProduct] = useState(false)
 
@@ -340,18 +427,7 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
     }
   }
 
-  async function updateOrderStatus(orderId: string, status: string) {
-    setError('')
-    setMessage('')
 
-    try {
-      await api.put(`/orders/${orderId}/status`, { orderStatus: status })
-      setMessage(`Order status updated to ${status}.`)
-      await loadDashboard()
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Could not update order status.')
-    }
-  }
 
     if (adminChecking) {
     return (
@@ -557,25 +633,81 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
       {message && <div className="admin-alert success">{message}</div>}
       {loading && <p className="admin-loading">Loading dashboard...</p>}
 
-      {!loading && activeTab === 'overview' && (
+           {!loading && activeTab === 'overview' && (
         <section className="admin-content">
           <h2>Dashboard overview</h2>
+
           <div className="admin-stats">
-            <article><span>ACTIVE PRODUCTS</span><strong>{products.length}</strong></article>
-            <article><span>TOTAL ORDERS</span><strong>{orders.length}</strong></article>
-            <article><span>PLACED ORDERS</span><strong>{orders.filter(order => order.orderStatus === 'Placed').length}</strong></article>
-            <article><span>DELIVERED ORDERS</span><strong>{orders.filter(order => order.orderStatus === 'Delivered').length}</strong></article>
+            <article>
+              <span>TOTAL REVENUE (PAID)</span>
+              <strong>{formatRupees(totalRevenue)}</strong>
+            </article>
+
+            <article>
+              <span>TOTAL ORDERS</span>
+              <strong>{orders.length}</strong>
+            </article>
+
+            <article>
+              <span>TODAY'S ORDERS</span>
+              <strong>{todaysOrders}</strong>
+            </article>
+
+            <article>
+              <span>TOTAL PRODUCTS</span>
+              <strong>{products.length}</strong>
+            </article>
+
+            <article>
+              <span>PENDING ORDERS</span>
+              <strong>{pendingOrders}</strong>
+            </article>
+          </div>
+
+          <div className="admin-sales-card">
+            <div className="admin-section-heading">
+              <div>
+                <h2>Sales overview</h2>
+                <p>Paid revenue over the last 7 days</p>
+              </div>
+              <strong>{formatRupees(
+                salesOverview.reduce((total, day) => total + day.revenue, 0)
+              )}</strong>
+            </div>
+
+            <div className="admin-sales-chart">
+              {salesOverview.map(day => (
+                <div className="admin-sales-day" key={day.date}>
+                  <strong>{formatRupees(day.revenue)}</strong>
+                  <div className="admin-sales-bar-track">
+                    <div
+                      className="admin-sales-bar"
+                      style={{
+                        height: `${Math.max(
+                          (day.revenue / maxDailyRevenue) * 100,
+                          3
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                  <span>{day.date}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="admin-section-heading">
             <h2>Recent orders</h2>
-            <button onClick={() => setActiveTab('orders')}>View all ?</button>
+            <button onClick={() => setActiveTab('orders')}>View all →</button>
           </div>
 
           {orders.length === 0 ? <p>No orders yet.</p> : orders.slice(0, 5).map(order => (
             <div className="admin-order-row" key={order._id}>
-              <div><strong>#{order._id.slice(-8).toUpperCase()}</strong><span>{order.shippingAddress?.fullName}</span></div>
-              <strong>?{order.totalPrice}</strong>
+              <div>
+                <strong>#{order._id.slice(-8).toUpperCase()}</strong>
+                <span>{order.shippingAddress?.fullName}</span>
+              </div>
+              <strong>{formatRupees(order.totalPrice)}</strong>
               <span className="admin-status">{order.orderStatus}</span>
             </div>
           ))}
@@ -715,15 +847,71 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
         </section>
       )}
 
-      {!loading && activeTab === 'orders' && (
+           {!loading && activeTab === 'orders' && (
         <section className="admin-content">
-          <h2>Customer orders ({orders.length})</h2>
+          <h2>Customer orders ({filteredOrders.length} / {orders.length})</h2>
 
-          {orders.length === 0 && <p>No orders have been placed yet.</p>}
+          <div className="admin-order-filters">
+            <label>
+              Search orders
+              <input
+                type="search"
+                value={orderSearch}
+                onChange={e => setOrderSearch(e.target.value)}
+                placeholder="Order ID or customer name"
+              />
+            </label>
 
-          {orders.map(order => {
-            const customer = typeof order.user === 'string' ? order.user : order.user?.name
-            const statuses = nextStatuses[order.orderStatus] || []
+            <label>
+              Order date
+              <input
+                type="date"
+                value={orderDateFilter}
+                onChange={e => setOrderDateFilter(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Payment status
+              <select
+                value={paymentStatusFilter}
+                onChange={e => setPaymentStatusFilter(e.target.value)}
+              >
+                <option value="All">All payments</option>
+                <option value="Pending">Pending</option>
+                <option value="Paid">Paid</option>
+                <option value="Failed">Failed</option>
+              </select>
+            </label>
+
+            <button
+              type="button"
+              className="admin-clear-filters"
+              onClick={() => {
+                setOrderSearch('')
+                setOrderDateFilter('')
+                setPaymentStatusFilter('All')
+              }}
+            >
+              Clear filters
+            </button>
+          </div>
+
+          {orders.length === 0 && (
+            <p>No orders have been placed yet.</p>
+          )}
+
+          {orders.length > 0 && filteredOrders.length === 0 && (
+            <p className="admin-no-results">
+              No orders match your search or selected filters.
+            </p>
+          )}
+
+          {filteredOrders.map(order => {
+            const customer = typeof order.user === 'string'
+              ? order.user
+              : order.user?.name
+
 
             return (
               <article className="admin-order-card" key={order._id}>
@@ -731,30 +919,46 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
                   <strong>ORDER #{order._id.slice(-8).toUpperCase()}</strong>
                   <span className="admin-status">{order.orderStatus}</span>
                 </div>
-                <p><strong>Customer:</strong> {customer || order.shippingAddress?.fullName}</p>
-                {typeof order.user !== 'string' && <p><strong>Email:</strong> {order.user?.email}</p>}
-                <p><strong>Phone:</strong> {order.shippingAddress?.phone}</p>
-                <p><strong>Address:</strong> {order.shippingAddress?.address}, {order.shippingAddress?.city} - {order.shippingAddress?.pincode}</p>
+
+                <p>
+                  <strong>Customer:</strong>{' '}
+                  {customer || order.shippingAddress?.fullName}
+                </p>
+
+                {typeof order.user !== 'string' && (
+                  <p><strong>Email:</strong> {order.user?.email}</p>
+                )}
+
+                <p>
+                  <strong>Phone:</strong> {order.shippingAddress?.phone}
+                </p>
+
+                <p>
+                  <strong>Address:</strong>{' '}
+                  {order.shippingAddress?.address}, {order.shippingAddress?.city} - {order.shippingAddress?.pincode}
+                </p>
 
                 <div className="admin-order-items">
                   {order.orderItems.map((item, index) => (
-                    <p key={`${order._id}-${index}`}>{item.name} | Size {item.size} | Qty {item.quantity} | ₹{item.price}</p>
+                    <p key={`${order._id}-${index}`}>
+                      {item.name} | Size {item.size} | Qty {item.quantity} | ₹{item.price}
+                    </p>
                   ))}
                 </div>
 
-                <p><strong>Payment:</strong> {order.paymentMethod} | {order.paymentStatus}</p>
-                <p><strong>Total:</strong> ?{order.totalPrice}</p>
-                <p><strong>Placed:</strong> {new Date(order.createdAt).toLocaleString('en-IN')}</p>
+                <p>
+                  <strong>Payment:</strong> {order.paymentMethod} | {order.paymentStatus}
+                </p>
 
-                {statuses.length > 0 && (
-                  <label className="admin-status-control">
-                    Update status
-                    <select value="" onChange={e => e.target.value && updateOrderStatus(order._id, e.target.value)}>
-                      <option value="">Choose next status</option>
-                      {statuses.map(status => <option key={status} value={status}>{status}</option>)}
-                    </select>
-                  </label>
-                )}
+                <p><strong>Total:</strong> {formatRupees(order.totalPrice)}</p>
+
+                <p>
+                  <strong>Placed:</strong>{' '}
+                  {new Date(order.createdAt).toLocaleString('en-IN', {
+                    timeZone: 'Asia/Kolkata',
+                  })}
+                </p>
+
               </article>
             )
           })}
@@ -765,6 +969,8 @@ async function handleLogin(event: FormEvent<HTMLFormElement>) {
 }
 
 export default AdminPage
+
+
 
 
 
